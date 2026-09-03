@@ -9,7 +9,7 @@ class WhatsAppTemplate extends Model
 {
     use HasFactory;
 
-    protected $table = 'whats_app_templates';
+    protected $table = 'whatsapp_templates';
 
     protected $fillable = [
         'name', 'display_name', 'content_sid', 'description',
