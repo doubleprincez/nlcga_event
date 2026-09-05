@@ -68,8 +68,9 @@
                 <flux:navlist.item icon="document-text" href="{{ route('resources.index') }}" :current="request()->routeIs('resources.*')">Resources</flux:navlist.item>
             </flux:navlist.group>
 
-            <flux:navlist.group heading="Communication" expandable :expanded="request()->routeIs('whatsapp-templates.*') || request()->routeIs('email-templates.*') || request()->routeIs('bot-communications.*') || request()->routeIs('ai.*')">
+            <flux:navlist.group heading="Communication" expandable :expanded="request()->routeIs('whatsapp-templates.*') || request()->routeIs('whatsapp-test') || request()->routeIs('email-templates.*') || request()->routeIs('bot-communications.*') || request()->routeIs('ai.*')">
                 <flux:navlist.item icon="chat-bubble-oval-left" href="{{ route('whatsapp-templates.index') }}" :current="request()->routeIs('whatsapp-templates.*')">WhatsApp Templates</flux:navlist.item>
+                <flux:navlist.item icon="paper-airplane" href="{{ route('whatsapp-test') }}" :current="request()->routeIs('whatsapp-test')">WhatsApp Tester</flux:navlist.item>
                 <flux:navlist.item icon="envelope" href="{{ route('email-templates.index') }}" :current="request()->routeIs('email-templates.*')">Email Templates</flux:navlist.item>
                 <flux:navlist.item icon="cpu-chip" href="{{ route('bot-communications.index') }}" :current="request()->routeIs('bot-communications.*')">Bot Communications</flux:navlist.item>
                 <flux:navlist.item icon="adjustments-horizontal" href="{{ route('ai.training') }}" :current="request()->routeIs('ai.training')">AI Training</flux:navlist.item>

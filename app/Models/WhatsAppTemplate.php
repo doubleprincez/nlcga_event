@@ -26,6 +26,11 @@ class WhatsAppTemplate extends Model
         return self::where('name', $name)->where('status', 'active')->first();
     }
 
+    public static function getContentSid(string $name): ?string
+    {
+        return self::where('name', $name)->where('status', 'active')->value('content_sid');
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

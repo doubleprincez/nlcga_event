@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
 
         // Bot Communications
         Volt::route('/bot-communications', 'bot-communications.index')->name('bot-communications.index');
+        Volt::route('/whatsapp-test', 'whatsapp-test')->name('whatsapp-test');
 
         // AI Configuration
         Volt::route('/ai-training', 'ai-training')->name('ai.training');
