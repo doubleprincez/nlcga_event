@@ -16,7 +16,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function save(): void
     {
         $this->validate([
-            'name'        => 'required|string|unique:whats_app_templates,name',
+            'name'        => 'required|string|unique:whatsapp_templates,name',
             'display_name' => 'required|string|max:255',
             'content_sid' => 'required|string',
         ]);
