@@ -150,7 +150,8 @@ new #[Layout('components.layouts.app')] class extends Component
                 $this->rawResponse = json_encode(['template_sid' => $contentSid, 'variables' => $variables], JSON_PRETTY_PRINT);
             } else {
                 $this->isSuccess = false;
-                $this->resultMessage = "Twilio rejected the template dispatch. Please check your Twilio credentials, ensure WhatsApp Sender is active, and verify that Content SID '{$contentSid}' is approved in your Twilio Console.";
+                $err = $twilio->getLastError() ?: "Twilio rejected the template dispatch.";
+                $this->resultMessage = "{$err}\n\nPlease check your Twilio credentials, ensure WhatsApp Sender is active, and verify that Content SID '{$contentSid}' is approved in your Twilio Console.";
             }
         } catch (\Throwable $e) {
             $this->isSuccess = false;

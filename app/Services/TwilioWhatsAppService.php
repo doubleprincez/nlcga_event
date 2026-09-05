@@ -7,10 +7,16 @@ use Illuminate\Support\Facades\Log;
 
 class TwilioWhatsAppService
 {
+    public ?string $lastError = null;
     protected $client = null;
     protected $accountSid;
     protected $authToken;
     protected $from;
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     public function __construct()
     {
@@ -164,9 +170,13 @@ class TwilioWhatsAppService
             }
 
             $errorBody = $response->json();
-            Log::error("Twilio Template REST Error (Code: " . ($errorBody['code'] ?? 'N/A') . "): " . ($errorBody['message'] ?? $response->body()));
+            $code = $errorBody['code'] ?? 'N/A';
+            $msg = $errorBody['message'] ?? $response->body();
+            $this->lastError = "Twilio Error (Code {$code}): {$msg}";
+            Log::error("Twilio Template REST Error (Code: {$code}): {$msg}");
             return false;
         } catch (\Throwable $e) {
+            $this->lastError = "Exception: " . $e->getMessage();
             Log::error("Twilio WhatsApp Template Exception: " . $e->getMessage());
             return false;
         }
