@@ -12,7 +12,8 @@
         "laravel/tinker": "^2.10.1",
         "livewire/flux": "^2.17",
         "livewire/livewire": "^3.5",
-        "livewire/volt": "^1.7"
+        "livewire/volt": "^1.7",
+        "twilio/sdk": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
