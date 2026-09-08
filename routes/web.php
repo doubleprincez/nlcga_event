@@ -45,9 +45,21 @@ Route::get('/fixcache', function () {
         $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
 
         \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
         $clearOutput = \Illuminate\Support\Facades\Artisan::output();
 
-        return response("<pre><h3>Migrations:</h3>{$migrateOutput}<h3>Cache:</h3>{$clearOutput}<h3>Status:</h3>All caches cleared and migrations executed successfully!</pre>");
+        // Also clean up compiled views directory if exists
+        $viewsPath = storage_path('framework/views');
+        if (is_dir($viewsPath)) {
+            foreach (glob($viewsPath . '/*.php') as $file) {
+                @unlink($file);
+            }
+        }
+
+        return response("<pre><h3>Migrations:</h3>{$migrateOutput}<h3>Cache Cleared:</h3>{$clearOutput}<h3>Status:</h3>All compiled Blade views, routes, and migrations updated successfully!</pre>");
     } catch (\Throwable $e) {
         return response("<pre style='color: red;'>Error: " . $e->getMessage() . "</pre>", 500);
     }

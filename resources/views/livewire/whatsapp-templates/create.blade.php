@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\WhatsAppTemplate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
@@ -16,7 +17,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public function save(): void
     {
         $this->validate([
-            'name'        => 'required|string|unique:whatsapp_templates,name',
+            'name'        => ['required', 'string', Rule::unique(WhatsAppTemplate::class, 'name')],
             'display_name' => 'required|string|max:255',
             'content_sid' => 'required|string',
         ]);
