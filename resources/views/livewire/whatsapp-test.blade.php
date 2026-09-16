@@ -14,12 +14,13 @@ new #[Layout('components.layouts.app')] class extends Component
     public string $selectedTemplate = 'payment_completed';
     public string $customContentSid = '';
     public string $messageType = 'template'; // template or freeform
+    public string $variableFormat = 'named'; // named or numbered
     public string $freeformMessage = 'Hello! This is a test message from NLCGA Event Assistant.';
 
     // Template variables
-    public string $attendeeName = 'John Doe';
+    public string $attendeeName = 'Lanre Bayewu';
     public string $eventName = 'NLCGA Conference 2026';
-    public string $email = 'john.doe@example.com';
+    public string $email = 'lanre@example.com';
     public string $ticketCode = 'EVT-TEST01';
     public string $amount = '50,000';
     public string $status = 'Confirmed';
@@ -70,7 +71,8 @@ new #[Layout('components.layouts.app')] class extends Component
                 $this->resultMessage = "Free-form message sent successfully to {$this->phone}!";
             } else {
                 $this->isSuccess = false;
-                $this->resultMessage = "Failed to send free-form message. Note: Free-form text is only permitted within 24 hours of the user contacting you first. Use templates for initial outbound messaging.";
+                $err = $twilio->getLastError() ?: "Failed to send free-form message.";
+                $this->resultMessage = "{$err}\n\nNote: Free-form text is only permitted within 24 hours of the user contacting you first. Use templates for initial outbound messaging.";
             }
             return;
         }
@@ -91,55 +93,96 @@ new #[Layout('components.layouts.app')] class extends Component
             // Default fallbacks if not yet in database
             if (!$contentSid) {
                 $contentSid = match ($this->selectedTemplate) {
-                    'payment_completed' => 'HXbfeddfb7e929b15cb88accb39d23cec6',
+                    'payment_completed' => 'HX807e357191a3eb58e8050ee90e6b74e4',
                     'event_notification' => 'HX807e357191a3eb58e8050ee90e6b74e4',
-                    default => 'HXbfeddfb7e929b15cb88accb39d23cec6',
+                    default => 'HX807e357191a3eb58e8050ee90e6b74e4',
                 };
             }
         }
 
-        // Variable mapping
-        $variables = match ($this->selectedTemplate) {
-            'payment_completed' => [
-                '1'               => $this->attendeeName,
-                '2'               => $this->eventName,
-                '3'               => $this->attendeeName,
-                '4'               => $this->email,
-                '5'               => $this->ticketCode,
-                '6'               => $this->status,
-                'username'        => $this->attendeeName,
-                'full_name'       => $this->attendeeName,
-                'event_name'      => $this->eventName,
-                'email'           => $this->email,
-                'registration_id' => $this->ticketCode,
-                'status'          => $this->status,
-                'q_code'          => url('/qr/' . $this->ticketCode),
-            ],
-            'event_notification' => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => $this->ticketCode,
-                '4' => $this->eventDate,
-            ],
-            'account_alert' => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => '₦' . $this->amount,
-                '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
-            ],
-            'event_reminder' => [
-                '1' => $this->eventName,
-                '2' => $this->attendeeName,
-                '3' => $this->eventDate,
-                '4' => $this->venue,
-                '5' => $this->ticketCode,
-            ],
-            default => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => $this->ticketCode,
-            ]
-        };
+        // Variable mapping based on chosen format (Named vs Numbered)
+        if ($this->variableFormat === 'named') {
+            $variables = match ($this->selectedTemplate) {
+                'payment_completed' => [
+                    'username'        => $this->attendeeName,
+                    'event_name'      => $this->eventName,
+                    'full_name'       => $this->attendeeName,
+                    'email'           => $this->email,
+                    'registration_id' => $this->ticketCode,
+                    'status'          => $this->status,
+                    'q_code'          => url('/qr/' . $this->ticketCode),
+                ],
+                'event_notification' => [
+                    'attendee_name' => $this->attendeeName,
+                    'event_name'    => $this->eventName,
+                    'ticket_code'   => $this->ticketCode,
+                    'event_date'    => $this->eventDate,
+                ],
+                'account_alert' => [
+                    'user_name'       => $this->attendeeName,
+                    'event_name'      => $this->eventName,
+                    'amount'          => '₦' . $this->amount,
+                    'action_required' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
+                ],
+                'event_reminder' => [
+                    'event_name'    => $this->eventName,
+                    'attendee_name' => $this->attendeeName,
+                    'event_date'    => $this->eventDate,
+                    'venue'         => $this->venue,
+                    'ticket_code'   => $this->ticketCode,
+                ],
+                default => [
+                    'username'        => $this->attendeeName,
+                    'event_name'      => $this->eventName,
+                    'full_name'       => $this->attendeeName,
+                    'email'           => $this->email,
+                    'registration_id' => $this->ticketCode,
+                    'status'          => $this->status,
+                    'q_code'          => url('/qr/' . $this->ticketCode),
+                ]
+            };
+        } else {
+            // Pure Numbered Format ({{1}}, {{2}}, ...)
+            $variables = match ($this->selectedTemplate) {
+                'payment_completed' => [
+                    '1' => $this->attendeeName,
+                    '2' => $this->eventName,
+                    '3' => $this->attendeeName,
+                    '4' => $this->email,
+                    '5' => $this->ticketCode,
+                    '6' => $this->status,
+                    '7' => url('/qr/' . $this->ticketCode),
+                ],
+                'event_notification' => [
+                    '1' => $this->attendeeName,
+                    '2' => $this->eventName,
+                    '3' => $this->ticketCode,
+                    '4' => $this->eventDate,
+                ],
+                'account_alert' => [
+                    '1' => $this->attendeeName,
+                    '2' => $this->eventName,
+                    '3' => '₦' . $this->amount,
+                    '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
+                ],
+                'event_reminder' => [
+                    '1' => $this->eventName,
+                    '2' => $this->attendeeName,
+                    '3' => $this->eventDate,
+                    '4' => $this->venue,
+                    '5' => $this->ticketCode,
+                ],
+                default => [
+                    '1' => $this->attendeeName,
+                    '2' => $this->eventName,
+                    '3' => $this->attendeeName,
+                    '4' => $this->email,
+                    '5' => $this->ticketCode,
+                    '6' => $this->status,
+                    '7' => url('/qr/' . $this->ticketCode),
+                ]
+            };
+        }
 
         try {
             $sent = $twilio->sendTemplateMessage($this->phone, $contentSid, $variables);
@@ -187,7 +230,7 @@ new #[Layout('components.layouts.app')] class extends Component
     </div>
 
     @if ($resultMessage)
-        <div class="mb-6 p-4 rounded-xl border {{ $isSuccess ? 'bg-green-50 border-green-300 text-green-800' : 'bg-red-50 border-red-300 text-red-800' }}">
+        <div class="mb-6 p-4 rounded-xl border {{ $isSuccess ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-300 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300' }}">
             <div class="flex items-center gap-2 font-bold mb-1">
                 <span>{{ $isSuccess ? '✅ Success' : '❌ Error' }}</span>
             </div>
@@ -223,16 +266,26 @@ new #[Layout('components.layouts.app')] class extends Component
                     </div>
 
                     @if($messageType === 'template')
-                        <flux:field>
-                            <flux:label>Select Template</flux:label>
-                            <flux:select wire:model.live="selectedTemplate">
-                                <flux:select.option value="payment_completed">payment_completed (QR Ticket & Payment Confirmation)</flux:select.option>
-                                <flux:select.option value="event_notification">event_notification (Registration Confirmation)</flux:select.option>
-                                <flux:select.option value="account_alert">account_alert (Payment Receipt Alert)</flux:select.option>
-                                <flux:select.option value="event_reminder">event_reminder (Event Broadcast Reminder)</flux:select.option>
-                                <flux:select.option value="custom">Custom Content SID...</flux:select.option>
-                            </flux:select>
-                        </flux:field>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <flux:field>
+                                <flux:label>Select Template</flux:label>
+                                <flux:select wire:model.live="selectedTemplate">
+                                    <flux:select.option value="payment_completed">payment_completed (QR Ticket & Payment Confirmation)</flux:select.option>
+                                    <flux:select.option value="event_notification">event_notification (Registration Confirmation)</flux:select.option>
+                                    <flux:select.option value="account_alert">account_alert (Payment Receipt Alert)</flux:select.option>
+                                    <flux:select.option value="event_reminder">event_reminder (Event Broadcast Reminder)</flux:select.option>
+                                    <flux:select.option value="custom">Custom Content SID...</flux:select.option>
+                                </flux:select>
+                            </flux:field>
+
+                            <flux:field>
+                                <flux:label>Template Variable Format in Twilio</flux:label>
+                                <flux:select wire:model.live="variableFormat">
+                                    <flux:select.option value="named">Named: {username}, {event_name}, {email}...</flux:select.option>
+                                    <flux:select.option value="numbered">Numbered: {{1}}, {{2}}, {{3}}...</flux:select.option>
+                                </flux:select>
+                            </flux:field>
+                        </div>
 
                         @if($selectedTemplate === 'custom')
                             <flux:field>
@@ -243,10 +296,13 @@ new #[Layout('components.layouts.app')] class extends Component
 
                         <!-- Dynamic Variable Inputs -->
                         <div class="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-lg space-y-3 border border-zinc-200 dark:border-zinc-700">
-                            <flux:heading size="sm">Template Test Variables</flux:heading>
+                            <div class="flex items-center justify-between">
+                                <flux:heading size="sm">Template Test Variables</flux:heading>
+                                <flux:badge size="sm" color="zinc">Format: {{ ucfirst($variableFormat) }}</flux:badge>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                 <flux:field>
-                                    <flux:label>Attendee Name</flux:label>
+                                    <flux:label>Attendee / Full Name</flux:label>
                                     <flux:input wire:model="attendeeName" />
                                 </flux:field>
                                 <flux:field>
@@ -254,7 +310,7 @@ new #[Layout('components.layouts.app')] class extends Component
                                     <flux:input wire:model="eventName" />
                                 </flux:field>
                                 <flux:field>
-                                    <flux:label>Ticket Code</flux:label>
+                                    <flux:label>Ticket Code / Registration ID</flux:label>
                                     <flux:input wire:model="ticketCode" />
                                 </flux:field>
                                 <flux:field>
