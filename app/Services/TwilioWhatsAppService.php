@@ -70,16 +70,25 @@ class TwilioWhatsAppService
         }
     }
 
+    protected $apiKey;
+    protected $apiSecret;
+
     public function __construct()
     {
-        $this->accountSid = env('TWILIO_ACCOUNT_SID', env('TWILIO_SID'));
-        $this->authToken = env('TWILIO_AUTH_TOKEN');
-        $this->from = env('TWILIO_WHATSAPP_FROM');
+        $this->accountSid = config('services.twilio.sid', env('TWILIO_ACCOUNT_SID', env('TWILIO_SID')));
+        $this->authToken  = config('services.twilio.token', env('TWILIO_AUTH_TOKEN'));
+        $this->apiKey     = config('services.twilio.api_key', env('TWILIO_API_KEY'));
+        $this->apiSecret  = config('services.twilio.api_secret', env('TWILIO_API_SECRET'));
+        $this->from       = config('services.twilio.whatsapp_from', env('TWILIO_WHATSAPP_FROM', '+14155238886'));
 
-        // If official Twilio SDK is installed, initialize it
-        if ($this->accountSid && $this->authToken && class_exists(\Twilio\Rest\Client::class)) {
+        // Initialize Twilio SDK Client if class exists
+        if (class_exists(\Twilio\Rest\Client::class)) {
             try {
-                $this->client = new \Twilio\Rest\Client($this->accountSid, $this->authToken);
+                if ($this->apiKey && $this->apiSecret && $this->accountSid) {
+                    $this->client = new \Twilio\Rest\Client($this->apiKey, $this->apiSecret, $this->accountSid);
+                } elseif ($this->accountSid && $this->authToken) {
+                    $this->client = new \Twilio\Rest\Client($this->accountSid, $this->authToken);
+                }
             } catch (\Throwable $e) {
                 Log::warning("Twilio SDK Client init warning: " . $e->getMessage());
             }

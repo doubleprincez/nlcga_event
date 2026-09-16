@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+    'twilio' => [
+        'sid'           => env('TWILIO_ACCOUNT_SID', env('TWILIO_SID')),
+        'token'         => env('TWILIO_AUTH_TOKEN'),
+        'api_key'       => env('TWILIO_API_KEY'),
+        'api_secret'    => env('TWILIO_API_SECRET'),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM', '+14155238886'),
+        'templates'     => [
+            'payment_completed'              => env('TWILIO_TEMPLATE_PAYMENT_COMPLETED', 'HX1e851b848e165f540074b548bacfd772'),
+            'event_registration_confirmation' => env('TWILIO_TEMPLATE_EVENT_REGISTRATION', 'HX68e84d59fe2f55fc1580278239f61d04'),
+            'event_payment_confirmation'      => env('TWILIO_TEMPLATE_EVENT_PAYMENT', 'HXb9b059eff7fa715d5f93418d2d9e0d5a'),
+            'event_reminder'                  => env('TWILIO_TEMPLATE_EVENT_REMINDER', 'HXb8a69c466d72d6bfac44dc932a4b7fe8'),
+        ],
+    ],
+
 ];
