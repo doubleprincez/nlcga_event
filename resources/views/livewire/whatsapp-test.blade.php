@@ -100,89 +100,62 @@ new #[Layout('components.layouts.app')] class extends Component
             }
         }
 
-        // Variable mapping based on chosen format (Named vs Numbered)
-        if ($this->variableFormat === 'named') {
-            $variables = match ($this->selectedTemplate) {
-                'payment_completed' => [
-                    'username'        => $this->attendeeName,
-                    'event_name'      => $this->eventName,
-                    'full_name'       => $this->attendeeName,
-                    'email'           => $this->email,
-                    'registration_id' => $this->ticketCode,
-                    'status'          => $this->status,
-                    'q_code'          => url('/qr/' . $this->ticketCode),
-                ],
-                'event_notification' => [
-                    'attendee_name' => $this->attendeeName,
-                    'event_name'    => $this->eventName,
-                    'ticket_code'   => $this->ticketCode,
-                    'event_date'    => $this->eventDate,
-                ],
-                'account_alert' => [
-                    'user_name'       => $this->attendeeName,
-                    'event_name'      => $this->eventName,
-                    'amount'          => '₦' . $this->amount,
-                    'action_required' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
-                ],
-                'event_reminder' => [
-                    'event_name'    => $this->eventName,
-                    'attendee_name' => $this->attendeeName,
-                    'event_date'    => $this->eventDate,
-                    'venue'         => $this->venue,
-                    'ticket_code'   => $this->ticketCode,
-                ],
-                default => [
-                    'username'        => $this->attendeeName,
-                    'event_name'      => $this->eventName,
-                    'full_name'       => $this->attendeeName,
-                    'email'           => $this->email,
-                    'registration_id' => $this->ticketCode,
-                    'status'          => $this->status,
-                    'q_code'          => url('/qr/' . $this->ticketCode),
-                ]
-            };
-        } else {
-            // Pure Numbered Format ({{1}}, {{2}}, ...)
-            $variables = match ($this->selectedTemplate) {
-                'payment_completed' => [
-                    '1' => $this->attendeeName,
-                    '2' => $this->eventName,
-                    '3' => $this->attendeeName,
-                    '4' => $this->email,
-                    '5' => $this->ticketCode,
-                    '6' => $this->status,
-                    '7' => url('/qr/' . $this->ticketCode),
-                ],
-                'event_notification' => [
-                    '1' => $this->attendeeName,
-                    '2' => $this->eventName,
-                    '3' => $this->ticketCode,
-                    '4' => $this->eventDate,
-                ],
-                'account_alert' => [
-                    '1' => $this->attendeeName,
-                    '2' => $this->eventName,
-                    '3' => '₦' . $this->amount,
-                    '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
-                ],
-                'event_reminder' => [
-                    '1' => $this->eventName,
-                    '2' => $this->attendeeName,
-                    '3' => $this->eventDate,
-                    '4' => $this->venue,
-                    '5' => $this->ticketCode,
-                ],
-                default => [
-                    '1' => $this->attendeeName,
-                    '2' => $this->eventName,
-                    '3' => $this->attendeeName,
-                    '4' => $this->email,
-                    '5' => $this->ticketCode,
-                    '6' => $this->status,
-                    '7' => url('/qr/' . $this->ticketCode),
-                ]
-            };
-        }
+        // Automatic variable mapping matching each template's exact schema
+        $variables = match ($this->selectedTemplate) {
+            'payment_completed' => ($this->variableFormat === 'numbered') ? [
+                '1' => $this->attendeeName,
+                '2' => $this->eventName,
+                '3' => $this->attendeeName,
+                '4' => $this->email,
+                '5' => $this->ticketCode,
+                '6' => $this->status,
+                '7' => url('/qr/' . $this->ticketCode),
+            ] : [
+                'username'        => $this->attendeeName,
+                'event_name'      => $this->eventName,
+                'full_name'       => $this->attendeeName,
+                'email'           => $this->email,
+                'registration_id' => $this->ticketCode,
+                'status'          => $this->status,
+                'q_code'          => url('/qr/' . $this->ticketCode),
+            ],
+            'event_registration_confirmation', 'event_notification' => [
+                '1' => $this->attendeeName,
+                '2' => $this->eventName,
+                '3' => $this->ticketCode,
+                '4' => $this->eventDate,
+            ],
+            'event_payment_confirmation', 'account_alert' => [
+                '1' => $this->attendeeName,
+                '2' => $this->eventName,
+                '3' => '₦' . $this->amount,
+                '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
+            ],
+            'event_reminder' => [
+                '1' => $this->eventName,
+                '2' => $this->attendeeName,
+                '3' => $this->eventDate,
+                '4' => $this->venue,
+                '5' => $this->ticketCode,
+            ],
+            default => ($this->variableFormat === 'numbered') ? [
+                '1' => $this->attendeeName,
+                '2' => $this->eventName,
+                '3' => $this->attendeeName,
+                '4' => $this->email,
+                '5' => $this->ticketCode,
+                '6' => $this->status,
+                '7' => url('/qr/' . $this->ticketCode),
+            ] : [
+                'username'        => $this->attendeeName,
+                'event_name'      => $this->eventName,
+                'full_name'       => $this->attendeeName,
+                'email'           => $this->email,
+                'registration_id' => $this->ticketCode,
+                'status'          => $this->status,
+                'q_code'          => url('/qr/' . $this->ticketCode),
+            ]
+        };
 
         try {
             $sent = $twilio->sendTemplateMessage($this->phone, $contentSid, $variables);
@@ -270,10 +243,10 @@ new #[Layout('components.layouts.app')] class extends Component
                             <flux:field>
                                 <flux:label>Select Template</flux:label>
                                 <flux:select wire:model.live="selectedTemplate">
-                                    <flux:select.option value="payment_completed">payment_completed (QR Ticket & Payment Confirmation)</flux:select.option>
-                                    <flux:select.option value="event_notification">event_notification (Registration Confirmation)</flux:select.option>
-                                    <flux:select.option value="account_alert">account_alert (Payment Receipt Alert)</flux:select.option>
-                                    <flux:select.option value="event_reminder">event_reminder (Event Broadcast Reminder)</flux:select.option>
+                                    <flux:select.option value="payment_completed">payment_completed (QR Ticket & Registration Details)</flux:select.option>
+                                    <flux:select.option value="event_registration_confirmation">event_registration_confirmation (Details Confirmation)</flux:select.option>
+                                    <flux:select.option value="event_payment_confirmation">event_payment_confirmation (Payment Receipt Summary)</flux:select.option>
+                                    <flux:select.option value="event_reminder">event_reminder (Day-Before Event Reminder)</flux:select.option>
                                     <flux:select.option value="custom">Custom Content SID...</flux:select.option>
                                 </flux:select>
                             </flux:field>

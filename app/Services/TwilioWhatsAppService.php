@@ -206,42 +206,121 @@ class TwilioWhatsAppService
         }
     }
 
-    public function sendEventNotification(string $to, array $data)
+    /**
+     * Template 1: payment_completed
+     * Hello {username}, Your registration for {event_name} is successful and your registration information is as follows:
+     * Full name: {full_name}
+     * Email: {email}
+     * Registration ID: {registration_id}
+     * Payment Status: {status}
+     * QR: {q_code}
+     */
+    public function sendPaymentCompleted(string $to, array $data): bool
     {
-        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_notification')
-            ?? config('services.twilio.templates.event_notification');
-        
-        if (!$contentSid) {
-            Log::error("Event notification template not configured");
-            return false;
-        }
+        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
+            ?? config('services.twilio.templates.payment_completed', 'HX807e357191a3eb58e8050ee90e6b74e4');
 
         $variables = [
-            '1' => $data['attendee_name'] ?? $data['name'] ?? 'Guest',
-            '2' => $data['event_name'] ?? 'Event',
-            '3' => $data['ticket_code'] ?? '',
-            '4' => $data['event_date'] ?? '',
-            '5' => $data['venue'] ?? '',
+            'username'        => $data['username'] ?? $data['full_name'] ?? 'Attendee',
+            'event_name'      => $data['event_name'] ?? 'NLCGA Conference 2026',
+            'full_name'       => $data['full_name'] ?? $data['username'] ?? 'Attendee',
+            'email'           => $data['email'] ?? 'N/A',
+            'registration_id' => $data['registration_id'] ?? $data['ticket_code'] ?? '',
+            'status'          => $data['status'] ?? 'Confirmed',
+            'q_code'          => $data['q_code'] ?? url('/qr/' . ($data['registration_id'] ?? '')),
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
     }
 
-    public function sendAccountAlert(string $to, array $data)
-    {
-        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('account_alert')
-            ?? config('services.twilio.templates.account_alert');
-        
-        if (!$contentSid) {
-            Log::error("Account alert template not configured");
-            return false;
-        }
+    /**
+     * Template 2: event_registration_confirmation
+     * Hello {{1}}! 🎉
+     * Your registration for {{2}} is confirmed!
+     * 📋 Details:
+     * • Attendee: {{1}}
+     * • Event: {{2}}
+     * • Ticket Code: {{3}}
+     * • Date: {{4}}
+     */
+    public function sendRegistrationConfirmation(
+        string $to,
+        string $name,
+        string $eventName,
+        string $ticketCode,
+        string $eventDate = ''
+    ): bool {
+        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_registration_confirmation')
+            ?? \App\Models\WhatsAppTemplate::getContentSid('event_notification')
+            ?? config('services.twilio.templates.event_registration_confirmation');
 
         $variables = [
-            '1' => $data['user_name'] ?? 'User',
-            '2' => $data['alert_type'] ?? 'Alert',
-            '3' => $data['message'] ?? '',
-            '4' => $data['action_required'] ?? '',
+            '1' => $name,
+            '2' => $eventName,
+            '3' => $ticketCode,
+            '4' => $eventDate,
+        ];
+
+        return $this->sendTemplateMessage($to, $contentSid, $variables);
+    }
+
+    /**
+     * Template 3: event_payment_confirmation
+     * Hi {{1}}! ✅
+     * Your payment for {{2}} has been successfully received!
+     * 💳 Payment Summary:
+     * • Amount Paid: {{3}}
+     * • Transaction Reference: {{4}}
+     * • Status: Confirmed
+     */
+    public function sendPaymentConfirmation(
+        string $to,
+        string $name,
+        string $eventName,
+        string $amount,
+        string $reference
+    ): bool {
+        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_payment_confirmation')
+            ?? \App\Models\WhatsAppTemplate::getContentSid('account_alert')
+            ?? config('services.twilio.templates.event_payment_confirmation');
+
+        $variables = [
+            '1' => $name,
+            '2' => $eventName,
+            '3' => $amount,
+            '4' => $reference,
+        ];
+
+        return $this->sendTemplateMessage($to, $contentSid, $variables);
+    }
+
+    /**
+     * Template 4: event_reminder
+     * Hi {{2}},
+     * This is a friendly reminder that {{1}} takes place tomorrow!
+     * 📍 Event Information:
+     * • Event: {{1}}
+     * • Date & Time: {{3}}
+     * • Venue: {{4}}
+     * • Your Ticket Code: {{5}}
+     */
+    public function sendEventReminder(
+        string $to,
+        string $eventName,
+        string $name,
+        string $eventDate,
+        string $venue,
+        string $ticketCode
+    ): bool {
+        $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_reminder')
+            ?? config('services.twilio.templates.event_reminder');
+
+        $variables = [
+            '1' => $eventName,
+            '2' => $name,
+            '3' => $eventDate,
+            '4' => $venue,
+            '5' => $ticketCode,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
@@ -262,37 +341,6 @@ class TwilioWhatsAppService
         }
 
         return $this->sendTemplateMessage($to, $template->content_sid, $variables);
-    }
-
-    public function sendRegistrationConfirmation(
-        string $to,
-        string $name,
-        string $eventName,
-        string $ticketCode,
-        string $eventDate = '',
-        string $venue = ''
-    ) {
-        return $this->sendEventNotification($to, [
-            'attendee_name' => $name,
-            'event_name' => $eventName,
-            'ticket_code' => $ticketCode,
-            'event_date' => $eventDate,
-            'venue' => $venue,
-        ]);
-    }
-
-    public function sendPaymentConfirmation(
-        string $to,
-        string $name,
-        string $amount,
-        string $reference
-    ) {
-        return $this->sendAccountAlert($to, [
-            'user_name' => $name,
-            'alert_type' => 'Payment Received',
-            'message' => "Your payment of {$amount} has been confirmed.",
-            'action_required' => "Reference: {$reference}",
-        ]);
     }
 
     private function formatPhoneNumber($number)
