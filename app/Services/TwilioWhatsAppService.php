@@ -161,6 +161,56 @@ class TwilioWhatsAppService
     }
 
     /**
+     * Dynamically conform variables to the exact schema defined on Twilio Content API
+     */
+    public function adaptVariablesForTemplate(string $contentSid, array $variables): array
+    {
+        try {
+            $expectedVars = \Illuminate\Support\Facades\Cache::remember("twilio_template_vars_{$contentSid}", 3600, function () use ($contentSid) {
+                $details = $this->fetchContentDetails($contentSid);
+                return isset($details['variables']) && is_array($details['variables']) ? array_keys($details['variables']) : null;
+            });
+
+            if (!empty($expectedVars)) {
+                $mapped = [];
+                foreach ($expectedVars as $expectedKey) {
+                    $strKey = (string) $expectedKey;
+                    if (array_key_exists($strKey, $variables)) {
+                        $mapped[$strKey] = $variables[$strKey];
+                    } elseif ($strKey === '1' && isset($variables['username'])) {
+                        $mapped[$strKey] = $variables['username'];
+                    } elseif ($strKey === '1' && isset($variables['full_name'])) {
+                        $mapped[$strKey] = $variables['full_name'];
+                    } elseif ($strKey === '2' && isset($variables['event_name'])) {
+                        $mapped[$strKey] = $variables['event_name'];
+                    } elseif ($strKey === '3' && isset($variables['full_name'])) {
+                        $mapped[$strKey] = $variables['full_name'];
+                    } elseif ($strKey === '3' && isset($variables['ticket_code'])) {
+                        $mapped[$strKey] = $variables['ticket_code'];
+                    } elseif ($strKey === '4' && isset($variables['email'])) {
+                        $mapped[$strKey] = $variables['email'];
+                    } elseif ($strKey === '4' && isset($variables['date'])) {
+                        $mapped[$strKey] = $variables['date'];
+                    } elseif ($strKey === '5' && isset($variables['registration_id'])) {
+                        $mapped[$strKey] = $variables['registration_id'];
+                    } elseif ($strKey === '6' && isset($variables['status'])) {
+                        $mapped[$strKey] = $variables['status'];
+                    } elseif ($strKey === 'q_code' && isset($variables['registration_id'])) {
+                        $mapped[$strKey] = $variables['registration_id'] . '.png';
+                    } else {
+                        $mapped[$strKey] = $variables[$strKey] ?? 'N/A';
+                    }
+                }
+                return $mapped;
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Could not auto-adapt variables for {$contentSid}: " . $e->getMessage());
+        }
+
+        return $variables;
+    }
+
+    /**
      * Send a template-based WhatsApp message (can be sent anytime)
      * 
      * @param string $to Phone number
@@ -183,10 +233,13 @@ class TwilioWhatsAppService
         $fromFormatted = str_starts_with($this->from, 'whatsapp:') ? $this->from : 'whatsapp:' . $this->from;
         $toFormatted = str_starts_with($to, 'whatsapp:') ? $to : 'whatsapp:' . $to;
 
+        // Auto-adapt variables according to Twilio template schema definition
+        $adaptedVariables = $this->adaptVariablesForTemplate($contentSid, $variables);
+
         // Clean & sanitize variables according to Twilio Content API rules
         // (No newlines, no tabs, string-casted values, no null/empty strings)
         $cleanVariables = [];
-        foreach ($variables as $k => $v) {
+        foreach ($adaptedVariables as $k => $v) {
             $strVal = trim(preg_replace('/[\r\n\t]+/', ' ', (string) $v));
             $cleanVariables[(string) $k] = ($strVal === '') ? 'N/A' : $strVal;
         }
@@ -279,9 +332,15 @@ class TwilioWhatsAppService
     public function sendPaymentCompleted(string $to, array $data): bool
     {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
-            ?? config('services.twilio.templates.payment_completed', 'HX807e357191a3eb58e8050ee90e6b74e4');
+            ?? config('services.twilio.templates.payment_completed', 'HX1e851b848e165f540074b548bacfd772');
 
         $variables = [
+            '1'               => $data['username'] ?? $data['full_name'] ?? 'Attendee',
+            '2'               => $data['event_name'] ?? 'NLCGA Conference 2026',
+            '3'               => $data['full_name'] ?? $data['username'] ?? 'Attendee',
+            '4'               => $data['email'] ?? 'N/A',
+            '5'               => $data['registration_id'] ?? $data['ticket_code'] ?? '',
+            '6'               => $data['status'] ?? 'Confirmed',
             'username'        => $data['username'] ?? $data['full_name'] ?? 'Attendee',
             'event_name'      => $data['event_name'] ?? 'NLCGA Conference 2026',
             'full_name'       => $data['full_name'] ?? $data['username'] ?? 'Attendee',
@@ -313,7 +372,7 @@ class TwilioWhatsAppService
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_registration_confirmation')
             ?? \App\Models\WhatsAppTemplate::getContentSid('event_notification')
-            ?? config('services.twilio.templates.event_registration_confirmation');
+            ?? config('services.twilio.templates.event_registration_confirmation', 'HX68e84d59fe2f55fc1580278239f61d04');
 
         $variables = [
             '1' => $name,
@@ -343,7 +402,7 @@ class TwilioWhatsAppService
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_payment_confirmation')
             ?? \App\Models\WhatsAppTemplate::getContentSid('account_alert')
-            ?? config('services.twilio.templates.event_payment_confirmation');
+            ?? config('services.twilio.templates.event_payment_confirmation', 'HXb9b059eff7fa715d5f93418d2d9e0d5a');
 
         $variables = [
             '1' => $name,
@@ -374,7 +433,7 @@ class TwilioWhatsAppService
         string $ticketCode
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_reminder')
-            ?? config('services.twilio.templates.event_reminder');
+            ?? config('services.twilio.templates.event_reminder', 'HXb8a69c466d72d6bfac44dc932a4b7fe8');
 
         $variables = [
             '1' => $eventName,

@@ -90,12 +90,14 @@ new #[Layout('components.layouts.app')] class extends Component
         } else {
             $contentSid = WhatsAppTemplate::getContentSid($this->selectedTemplate);
 
-            // Default fallbacks if not yet in database
+            // Default fallbacks matching Twilio Console Content SIDs
             if (!$contentSid) {
                 $contentSid = match ($this->selectedTemplate) {
-                    'payment_completed' => 'HX807e357191a3eb58e8050ee90e6b74e4',
-                    'event_notification' => 'HX807e357191a3eb58e8050ee90e6b74e4',
-                    default => 'HX807e357191a3eb58e8050ee90e6b74e4',
+                    'payment_completed' => 'HX1e851b848e165f540074b548bacfd772',
+                    'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
+                    'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
+                    'event_reminder' => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
+                    default => 'HX1e851b848e165f540074b548bacfd772',
                 };
             }
         }
