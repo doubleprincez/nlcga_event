@@ -295,8 +295,24 @@ class TwilioWhatsAppService
             $errorBody = $response->json();
             $code = $errorBody['code'] ?? 'N/A';
             $msg = $errorBody['message'] ?? $response->body();
-            $this->lastError = "Twilio Error (Code {$code}): {$msg}";
-            Log::error("Twilio Template REST Error (Code: {$code}): {$msg}");
+            
+            // Check if failure is due to unapproved / rejected WhatsApp template state
+            $approvalInfo = $this->fetchApprovalStatus($contentSid);
+            $whatsappStatus = $approvalInfo['whatsapp']['status'] ?? 'unknown';
+            $rejectionReason = $approvalInfo['whatsapp']['rejection_reason'] ?? '';
+
+            $extraDetail = "";
+            if ($whatsappStatus !== 'approved') {
+                $extraDetail = "\n\n📋 Twilio Template Approval Status: '{$whatsappStatus}'";
+                if ($whatsappStatus === 'received') {
+                    $extraDetail .= " (Pending Meta review. WhatsApp strictly rejects dispatching templates until Meta marks them 'approved').";
+                } elseif ($whatsappStatus === 'rejected') {
+                    $extraDetail .= " (Meta rejected this template. Reason: {$rejectionReason}).";
+                }
+            }
+
+            $this->lastError = "Twilio Error (Code {$code}): {$msg}{$extraDetail}";
+            Log::error("Twilio Template REST Error (Code: {$code}): {$msg}{$extraDetail}");
             return false;
         } catch (\Throwable $e) {
             $this->lastError = "Exception: " . $e->getMessage();
@@ -341,7 +357,7 @@ class TwilioWhatsAppService
     public function sendPaymentCompleted(string $to, array $data): bool
     {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
-            ?? config('services.twilio.templates.payment_completed', 'HX1e851b848e165f540074b548bacfd772');
+            ?? config('services.twilio.templates.payment_completed', 'HXb8ece9cf3b01ded0ad0d937dd35254bb');
 
         $variables = [
             '1'               => $data['username'] ?? $data['full_name'] ?? 'Attendee',
