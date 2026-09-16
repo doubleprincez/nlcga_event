@@ -18,6 +18,58 @@ class TwilioWhatsAppService
         return $this->lastError;
     }
 
+    /**
+     * Inspect Content Template directly from Twilio Content API
+     */
+    public function fetchContentDetails(string $contentSid): ?array
+    {
+        if (!$this->accountSid || !$this->authToken) {
+            return null;
+        }
+
+        try {
+            $apiUrl = "https://content.twilio.com/v1/Content/{$contentSid}";
+            $res = Http::withoutVerifying()
+                ->withBasicAuth($this->accountSid, $this->authToken)
+                ->get($apiUrl);
+
+            if ($res->successful()) {
+                return $res->json();
+            }
+
+            Log::warning("Failed to fetch Twilio content details: " . $res->body());
+            return null;
+        } catch (\Throwable $e) {
+            Log::error("Twilio fetchContentDetails error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Fetch WhatsApp approval status for Content SID
+     */
+    public function fetchApprovalStatus(string $contentSid): ?array
+    {
+        if (!$this->accountSid || !$this->authToken) {
+            return null;
+        }
+
+        try {
+            $apiUrl = "https://content.twilio.com/v1/Content/{$contentSid}/ApprovalRequests";
+            $res = Http::withoutVerifying()
+                ->withBasicAuth($this->accountSid, $this->authToken)
+                ->get($apiUrl);
+
+            if ($res->successful()) {
+                return $res->json();
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function __construct()
     {
         $this->accountSid = env('TWILIO_ACCOUNT_SID', env('TWILIO_SID'));

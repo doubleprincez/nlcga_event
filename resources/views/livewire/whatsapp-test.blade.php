@@ -175,6 +175,39 @@ new #[Layout('components.layouts.app')] class extends Component
         }
     }
 
+    public ?string $inspectedTemplate = null;
+
+    public function inspectTemplate(): void
+    {
+        $contentSid = ($this->selectedTemplate === 'custom')
+            ? trim($this->customContentSid)
+            : (WhatsAppTemplate::getContentSid($this->selectedTemplate) ?? 'HX807e357191a3eb58e8050ee90e6b74e4');
+
+        if (empty($contentSid)) {
+            $this->resultMessage = "Please enter or select a valid Content SID to inspect.";
+            $this->isSuccess = false;
+            return;
+        }
+
+        $twilio = new TwilioWhatsAppService();
+        $details = $twilio->fetchContentDetails($contentSid);
+        $approvals = $twilio->fetchApprovalStatus($contentSid);
+
+        if (!$details) {
+            $this->isSuccess = false;
+            $this->resultMessage = "Could not fetch Content SID '{$contentSid}' from Twilio. Please check your Twilio Account SID and Auth Token in .env.";
+            $this->inspectedTemplate = null;
+            return;
+        }
+
+        $this->isSuccess = true;
+        $this->resultMessage = "Fetched template structure directly from Twilio Content API:";
+        $this->inspectedTemplate = json_encode([
+            'content_details' => $details,
+            'approval_status' => $approvals,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    }
+
     public function processPendingTickets(): void
     {
         try {
@@ -303,8 +336,24 @@ new #[Layout('components.layouts.app')] class extends Component
                         <flux:button type="submit" variant="primary" icon="paper-airplane">
                             Send Test Message
                         </flux:button>
+                        @if($messageType === 'template')
+                            <flux:button type="button" wire:click="inspectTemplate" variant="ghost" icon="magnifying-glass">
+                                Inspect Template on Twilio
+                            </flux:button>
+                        @endif
                     </div>
                 </form>
+
+                @if($inspectedTemplate)
+                    <div class="mt-6 p-4 rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-900">
+                        <div class="flex items-center justify-between mb-2">
+                            <flux:heading size="sm" class="text-blue-900 dark:text-blue-200">Twilio Content API Inspection Data</flux:heading>
+                            <flux:badge size="sm" color="blue">Live Twilio Response</flux:badge>
+                        </div>
+                        <p class="text-xs text-zinc-600 dark:text-zinc-400 mb-2">Review placeholder variables, approval state, and body definition as registered in Twilio Console:</p>
+                        <pre class="p-3 bg-zinc-900 text-zinc-100 rounded-lg text-xs overflow-x-auto font-mono max-h-96 leading-relaxed">{{ $inspectedTemplate }}</pre>
+                    </div>
+                @endif
             </flux:card>
         </div>
 
@@ -331,9 +380,21 @@ new #[Layout('components.layouts.app')] class extends Component
 
             <flux:card>
                 <flux:heading size="sm" class="mb-2">Server Cron Configuration</flux:heading>
-                <p class="text-xs text-zinc-500 mb-2">To run this automatically every minute on your cPanel / shared hosting, add this cron job:</p>
-                <div class="p-2 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-xs text-zinc-800 dark:text-zinc-200 select-all overflow-x-auto">
-                    * * * * * cd /home/nlcgacom/api-v2.nlcga.com/server_files && php artisan schedule:run >> /dev/null 2>&1
+                <p class="text-xs text-zinc-500 mb-2">To bypass <code class="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[11px]">proc_open</code> restrictions on shared hosting / cPanel, run the artisan command directly or use the HTTP webhook:</p>
+                
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">Option 1: Direct CLI Command</span>
+                        <div class="p-2 mt-1 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-xs text-zinc-800 dark:text-zinc-200 select-all overflow-x-auto">
+                            * * * * * cd /home/nlcgacom/api-v2.nlcga.com/server_files && php artisan whatsapp:send-pending-tickets >> /dev/null 2>&1
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">Option 2: Web Cron (cURL / cron-job.org)</span>
+                        <div class="p-2 mt-1 bg-zinc-100 dark:bg-zinc-800 rounded font-mono text-xs text-indigo-600 dark:text-indigo-400 select-all overflow-x-auto">
+                            curl -s https://api-v2.nlcga.com/api/cron/process-tickets
+                        </div>
+                    </div>
                 </div>
             </flux:card>
         </div>

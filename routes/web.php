@@ -65,6 +65,24 @@ Route::get('/fixcache', function () {
     }
 });
 
+// Shared Hosting Web Cron Route (Bypasses proc_open restrictions)
+Route::get('/api/cron/process-tickets', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('whatsapp:send-pending-tickets', ['--limit' => 50]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json([
+            'status' => 'success',
+            'output' => trim($output),
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+});
+
 // Logout
 Route::post('/logout', function () {
     auth()->logout();
