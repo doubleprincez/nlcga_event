@@ -14,7 +14,7 @@ new #[Layout('components.layouts.app')] class extends Component
     public string $selectedTemplate = 'payment_completed';
     public string $customContentSid = '';
     public string $messageType = 'template'; // template or freeform
-    public string $variableFormat = 'named'; // named or numbered
+    public string $variableFormat = 'numbered'; // numbered (Twilio standard) or named
     public string $freeformMessage = 'Hello! This is a test message from NLCGA Event Assistant.';
 
     // Template variables

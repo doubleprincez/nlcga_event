@@ -130,7 +130,16 @@ class TwilioWhatsAppService
 
         $fromFormatted = str_starts_with($this->from, 'whatsapp:') ? $this->from : 'whatsapp:' . $this->from;
         $toFormatted = str_starts_with($to, 'whatsapp:') ? $to : 'whatsapp:' . $to;
-        $variablesJson = json_encode($variables);
+
+        // Clean & sanitize variables according to Twilio Content API rules
+        // (No newlines, no tabs, string-casted values, no null/empty strings)
+        $cleanVariables = [];
+        foreach ($variables as $k => $v) {
+            $strVal = trim(preg_replace('/[\r\n\t]+/', ' ', (string) $v));
+            $cleanVariables[(string) $k] = ($strVal === '') ? 'N/A' : $strVal;
+        }
+
+        $variablesJson = json_encode($cleanVariables, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         // Try official SDK if present
         if ($this->client) {
