@@ -369,7 +369,7 @@ class TwilioWhatsAppService
     public function sendPaymentCompleted(string $to, array $data): bool
     {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
-            ?? config('services.twilio.templates.payment_completed', 'HX58ce037365a2c5bbdcbdda9b76be6786');
+            ?? config('services.twilio.templates.payment_completed', 'HX05f973a590f932ea4078b09c5b54c56b');
 
         $regId = $data['registration_id'] ?? $data['ticket_code'] ?? '';
         $qrUrl = $data['q_code_url'] ?? $data['q_code'] ?? url('/qr/' . $regId);
