@@ -203,12 +203,10 @@ class TwilioWhatsAppService
                     } elseif ($strKey === '5' && isset($variables['registration_id'])) {
                         $mapped[$strKey] = $variables['registration_id'];
                     } elseif ($strKey === '6') {
-                        // If template has 6 variables, 6 is the media QR code filename
-                        if (count($expectedVars) === 6) {
-                            $mapped[$strKey] = ($variables['registration_id'] ?? $variables['ticket_code'] ?? '') ? ($variables['registration_id'] ?? $variables['ticket_code']) . '.png' : ($variables['6'] ?? 'ticket.png');
-                        } else {
-                            $mapped[$strKey] = $variables['status'] ?? $variables['6'] ?? 'Confirmed';
-                        }
+                        // Key 6 can be the ticket view link, payment status, or media filename
+                        $mapped[$strKey] = $variables['6'] 
+                            ?? $variables['ticket_url'] 
+                            ?? (isset($variables['registration_id']) ? url('/ticket/view/' . $variables['registration_id']) : ($variables['status'] ?? 'Confirmed'));
                     } elseif ($strKey === '7') {
                         $mapped[$strKey] = $variables['7'] ?? $variables['q_code_url'] ?? $variables['q_code'] ?? url('/qr/' . ($variables['registration_id'] ?? $variables['ticket_code'] ?? 'EVT'));
                     } elseif ($strKey === '8') {
@@ -313,7 +311,7 @@ class TwilioWhatsAppService
             $extraDetail = "";
             if ($whatsappStatus !== 'approved') {
                 $extraDetail = "\n\n📋 Twilio Template Approval Status: '{$whatsappStatus}'";
-                if ($whatsappStatus === 'received') {
+                if ($whatsappStatus === 'received' || $whatsappStatus === 'pending') {
                     $extraDetail .= " (Pending Meta review. WhatsApp strictly rejects dispatching templates until Meta marks them 'approved').";
                 } elseif ($whatsappStatus === 'rejected') {
                     $extraDetail .= " (Meta rejected this template. Reason: {$rejectionReason}).";
@@ -339,7 +337,7 @@ class TwilioWhatsAppService
             ->where('direction', 'inbound')
             ->where('created_at', '>=', now()->subHours(24))
             ->first();
-
+        
         if ($lastContact) {
             Log::info("Using free-form message (within 24-hour window)");
             return $this->sendMessage($to, $message, $mediaUrl);
@@ -348,44 +346,44 @@ class TwilioWhatsAppService
                 Log::error("No template SID provided and outside 24-hour window. Cannot send.");
                 return false;
             }
-
+            
             Log::info("Using template message (outside 24-hour window or first contact)");
             return $this->sendTemplateMessage($to, $contentSid, $variables);
         }
     }
 
     /**
-     * Template 1: payment_completed (8-variable format with media QR card)
-     * Hello {{1}}, Your registration for {{2}} is successful and your registration information is as follows:
-     * Full name: {{3}}
-     * Email: {{4}}
-     * Registration ID: {{5}}
-     * Payment Status: {{6}}
-     * QR: {{7}}
+     * Template 1: payment_completed
+     * NLCGA CONFERENCE & EXHIBITION
+     * Hello {{1}}, your registration for {{2}} has been confirmed!
+     * 📋 Registration Details:
+     * • Full Name: {{3}}
+     * • Email: {{4}}
+     * • Registration ID: {{5}}
+     * • Ticket & QR Link: {{6}}
      * 
-     * Thank you for registering. See you at the conference
-     * Media: https://api-v2.nlcga.com/qr/{{8}}
+     * Thank you for registering. See you at the conference!
      */
     public function sendPaymentCompleted(string $to, array $data): bool
     {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
-            ?? config('services.twilio.templates.payment_completed', 'HX05f973a590f932ea4078b09c5b54c56b');
+            ?? config('services.twilio.templates.payment_completed', 'HXa52710a6d221783ddf647dac5400162b');
 
         $regId = $data['registration_id'] ?? $data['ticket_code'] ?? '';
+        $ticketUrl = $data['ticket_url'] ?? url('/ticket/view/' . $regId);
         $qrUrl = $data['q_code_url'] ?? $data['q_code'] ?? url('/qr/' . $regId);
-        $qrFilename = $data['qr_filename'] ?? ($regId ? $regId . '.png' : 'ticket.png');
 
         $variables = [
             '1'               => $data['username'] ?? $data['full_name'] ?? 'Attendee',
-            '2'               => $data['event_name'] ?? 'NLCGA Conference 2026',
+            '2'               => $data['event_name'] ?? 'NLCGA Conference & Exhibition 2026',
             '3'               => $data['full_name'] ?? $data['username'] ?? 'Attendee',
             '4'               => $data['email'] ?? 'N/A',
             '5'               => $regId,
-            '6'               => $data['status'] ?? 'Confirmed',
+            '6'               => $ticketUrl,
             '7'               => $qrUrl,
-            '8'               => $qrFilename,
+            '8'               => ($regId ? $regId . '.png' : 'ticket.png'),
             'username'        => $data['username'] ?? $data['full_name'] ?? 'Attendee',
-            'event_name'      => $data['event_name'] ?? 'NLCGA Conference 2026',
+            'event_name'      => $data['event_name'] ?? 'NLCGA Conference & Exhibition 2026',
             'full_name'       => $data['full_name'] ?? $data['username'] ?? 'Attendee',
             'email'           => $data['email'] ?? 'N/A',
             'registration_id' => $regId,
