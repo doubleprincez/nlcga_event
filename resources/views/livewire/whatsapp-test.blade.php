@@ -97,7 +97,7 @@ new #[Layout('components.layouts.app')] class extends Component
                     'nlcga_conf_card_text_v2' => 'HX6d5294f0d741d76f1cea8acf777faa54',
                     'nlcga_conf_media_qr_v3' => 'HXf677efc9f9b5cb7e1656fb38d27f20d1',
                     'nlcga_conf_button_ticket_v4' => 'HXde6355d970e43deb7a9f52bc6c9b97b8',
-                    'payment_completed' => 'HXa52710a6d221783ddf647dac5400162b',
+                    'payment_completed', 'payment_confirmed' => 'HXa52710a6d221783ddf647dac5400162b',
                     'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
                     'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
                     'event_reminder' => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
@@ -108,7 +108,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
         // Automatic variable mapping matching each template's exact schema
         $variables = match ($this->selectedTemplate) {
-            'nlcga_conf_ticket_text_v1', 'payment_completed' => [
+            'nlcga_conf_ticket_text_v1', 'payment_completed', 'payment_confirmed' => [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
                 '3' => $this->attendeeName,
