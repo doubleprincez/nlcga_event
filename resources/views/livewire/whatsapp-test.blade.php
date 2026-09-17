@@ -93,11 +93,11 @@ new #[Layout('components.layouts.app')] class extends Component
             // Default fallbacks matching Twilio Console Content SIDs
             if (!$contentSid) {
                 $contentSid = match ($this->selectedTemplate) {
-                    'payment_completed' => 'HX58ce037365a2c5bbdcbdda9b76be6786',
+                    'payment_completed' => 'HXd6a40e154122d3d9c41e52794b0317f2',
                     'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
                     'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
                     'event_reminder' => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
-                    default => 'HX58ce037365a2c5bbdcbdda9b76be6786',
+                    default => 'HXd6a40e154122d3d9c41e52794b0317f2',
                 };
             }
         }

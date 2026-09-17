@@ -202,8 +202,13 @@ class TwilioWhatsAppService
                         $mapped[$strKey] = $variables['date'];
                     } elseif ($strKey === '5' && isset($variables['registration_id'])) {
                         $mapped[$strKey] = $variables['registration_id'];
-                    } elseif ($strKey === '6' && isset($variables['status'])) {
-                        $mapped[$strKey] = $variables['status'];
+                    } elseif ($strKey === '6') {
+                        // If template has 6 variables, 6 is the media QR code filename
+                        if (count($expectedVars) === 6) {
+                            $mapped[$strKey] = ($variables['registration_id'] ?? $variables['ticket_code'] ?? '') ? ($variables['registration_id'] ?? $variables['ticket_code']) . '.png' : ($variables['6'] ?? 'ticket.png');
+                        } else {
+                            $mapped[$strKey] = $variables['status'] ?? $variables['6'] ?? 'Confirmed';
+                        }
                     } elseif ($strKey === '7') {
                         $mapped[$strKey] = $variables['7'] ?? $variables['q_code_url'] ?? $variables['q_code'] ?? url('/qr/' . ($variables['registration_id'] ?? $variables['ticket_code'] ?? 'EVT'));
                     } elseif ($strKey === '8') {
