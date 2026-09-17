@@ -28,7 +28,26 @@ class WhatsAppTemplate extends Model
 
     public static function getContentSid(string $name): ?string
     {
-        return self::where('name', $name)->where('status', 'active')->value('content_sid');
+        $sid = self::where('name', $name)->where('status', 'active')->value('content_sid');
+        if ($sid) {
+            return trim($sid);
+        }
+
+        // Fallback to alias if applicable
+        if ($name === 'payment_completed' || $name === 'payment_confirmed') {
+            $aliasSid = self::whereIn('name', ['payment_completed', 'payment_confirmed'])
+                ->where('status', 'active')
+                ->whereNotNull('content_sid')
+                ->value('content_sid');
+            if ($aliasSid) {
+                return trim($aliasSid);
+            }
+        }
+
+        // Fallback to config / env
+        return config("services.twilio.templates.{$name}")
+            ?: config('services.twilio.templates.default')
+            ?: env('TWILIO_DEFAULT_TEMPLATE_SID');
     }
 
     public function isActive(): bool

@@ -90,15 +90,10 @@ new #[Layout('components.layouts.app')] class extends Component
         } else {
             $contentSid = WhatsAppTemplate::getContentSid($this->selectedTemplate);
 
-            // Default fallbacks matching Twilio Console Content SIDs
             if (!$contentSid) {
-                $contentSid = match ($this->selectedTemplate) {
-                    'payment_completed', 'payment_confirmed' => 'HXa52710a6d221783ddf647dac5400162b',
-                    'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
-                    'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
-                    'event_reminder' => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
-                    default => 'HXa52710a6d221783ddf647dac5400162b',
-                };
+                $this->isSuccess = false;
+                $this->resultMessage = "No Content SID configured for template '{$this->selectedTemplate}'. Please configure it in WhatsApp Templates or your .env file.";
+                return;
             }
         }
 
@@ -174,10 +169,10 @@ new #[Layout('components.layouts.app')] class extends Component
     {
         $contentSid = ($this->selectedTemplate === 'custom')
             ? trim($this->customContentSid)
-            : (WhatsAppTemplate::getContentSid($this->selectedTemplate) ?? 'HX807e357191a3eb58e8050ee90e6b74e4');
+            : WhatsAppTemplate::getContentSid($this->selectedTemplate);
 
         if (empty($contentSid)) {
-            $this->resultMessage = "Please enter or select a valid Content SID to inspect.";
+            $this->resultMessage = "Please enter or select a valid Content SID to inspect. No SID found for '{$this->selectedTemplate}' in database or environment.";
             $this->isSuccess = false;
             return;
         }

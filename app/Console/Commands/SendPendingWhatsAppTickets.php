@@ -59,11 +59,10 @@ class SendPendingWhatsAppTickets extends Command
 
         $twilio = new TwilioWhatsAppService();
 
-        // Retrieve dynamic template SID from database or use fallback
+        // Retrieve dynamic template SID from database or env/config
         $contentSid = WhatsAppTemplate::getContentSid('payment_completed')
             ?? WhatsAppTemplate::getContentSid('payment_confirmed')
-            ?? WhatsAppTemplate::getContentSid('event_notification')
-            ?? env('TWILIO_DEFAULT_TEMPLATE_SID', 'HXa52710a6d221783ddf647dac5400162b');
+            ?? env('TWILIO_DEFAULT_TEMPLATE_SID');
 
         $successCount = 0;
         $failedCount = 0;

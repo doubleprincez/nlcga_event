@@ -369,7 +369,7 @@ class TwilioWhatsAppService
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
             ?? \App\Models\WhatsAppTemplate::getContentSid('payment_confirmed')
             ?? config('services.twilio.templates.payment_completed')
-            ?? config('services.twilio.templates.payment_confirmed', 'HXa52710a6d221783ddf647dac5400162b');
+            ?? config('services.twilio.templates.payment_confirmed');
 
         $regId = $data['registration_id'] ?? $data['ticket_code'] ?? '';
         $ticketUrl = $data['ticket_url'] ?? url('/ticket/view/' . $regId);
@@ -398,13 +398,6 @@ class TwilioWhatsAppService
 
     /**
      * Template 2: event_registration_confirmation
-     * Hello {{1}}! 🎉
-     * Your registration for {{2}} is confirmed!
-     * 📋 Details:
-     * • Attendee: {{1}}
-     * • Event: {{2}}
-     * • Ticket Code: {{3}}
-     * • Date: {{4}}
      */
     public function sendRegistrationConfirmation(
         string $to,
@@ -415,7 +408,7 @@ class TwilioWhatsAppService
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_registration_confirmation')
             ?? \App\Models\WhatsAppTemplate::getContentSid('event_notification')
-            ?? config('services.twilio.templates.event_registration_confirmation', 'HX68e84d59fe2f55fc1580278239f61d04');
+            ?? config('services.twilio.templates.event_registration_confirmation');
 
         $variables = [
             '1' => $name,
@@ -429,12 +422,6 @@ class TwilioWhatsAppService
 
     /**
      * Template 3: event_payment_confirmation
-     * Hi {{1}}! ✅
-     * Your payment for {{2}} has been successfully received!
-     * 💳 Payment Summary:
-     * • Amount Paid: {{3}}
-     * • Transaction Reference: {{4}}
-     * • Status: Confirmed
      */
     public function sendPaymentConfirmation(
         string $to,
@@ -445,7 +432,7 @@ class TwilioWhatsAppService
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_payment_confirmation')
             ?? \App\Models\WhatsAppTemplate::getContentSid('account_alert')
-            ?? config('services.twilio.templates.event_payment_confirmation', 'HXb9b059eff7fa715d5f93418d2d9e0d5a');
+            ?? config('services.twilio.templates.event_payment_confirmation');
 
         $variables = [
             '1' => $name,
@@ -459,13 +446,6 @@ class TwilioWhatsAppService
 
     /**
      * Template 4: event_reminder
-     * Hi {{2}},
-     * This is a friendly reminder that {{1}} takes place tomorrow!
-     * 📍 Event Information:
-     * • Event: {{1}}
-     * • Date & Time: {{3}}
-     * • Venue: {{4}}
-     * • Your Ticket Code: {{5}}
      */
     public function sendEventReminder(
         string $to,
@@ -476,7 +456,7 @@ class TwilioWhatsAppService
         string $ticketCode
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_reminder')
-            ?? config('services.twilio.templates.event_reminder', 'HXb8a69c466d72d6bfac44dc932a4b7fe8');
+            ?? config('services.twilio.templates.event_reminder');
 
         $variables = [
             '1' => $eventName,
