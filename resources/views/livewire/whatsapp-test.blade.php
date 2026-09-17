@@ -93,10 +93,6 @@ new #[Layout('components.layouts.app')] class extends Component
             // Default fallbacks matching Twilio Console Content SIDs
             if (!$contentSid) {
                 $contentSid = match ($this->selectedTemplate) {
-                    'nlcga_conf_ticket_text_v1' => 'HX05f973a590f932ea4078b09c5b54c56b',
-                    'nlcga_conf_card_text_v2' => 'HX6d5294f0d741d76f1cea8acf777faa54',
-                    'nlcga_conf_media_qr_v3' => 'HXf677efc9f9b5cb7e1656fb38d27f20d1',
-                    'nlcga_conf_button_ticket_v4' => 'HXde6355d970e43deb7a9f52bc6c9b97b8',
                     'payment_completed', 'payment_confirmed' => 'HXa52710a6d221783ddf647dac5400162b',
                     'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
                     'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
@@ -108,35 +104,22 @@ new #[Layout('components.layouts.app')] class extends Component
 
         // Automatic variable mapping matching each template's exact schema
         $variables = match ($this->selectedTemplate) {
-            'nlcga_conf_ticket_text_v1', 'payment_completed', 'payment_confirmed' => [
+            'payment_completed', 'payment_confirmed' => ($this->variableFormat === 'numbered') ? [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
                 '3' => $this->attendeeName,
                 '4' => $this->email,
                 '5' => $this->ticketCode,
                 '6' => url('/ticket/view/' . $this->ticketCode),
-            ],
-            'nlcga_conf_card_text_v2' => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => $this->attendeeName,
-                '4' => $this->email,
-                '5' => $this->ticketCode,
-            ],
-            'nlcga_conf_media_qr_v3' => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => $this->attendeeName,
-                '4' => $this->email,
-                '5' => $this->ticketCode,
-                '6' => $this->ticketCode . '.png',
-            ],
-            'nlcga_conf_button_ticket_v4' => [
-                '1' => $this->attendeeName,
-                '2' => $this->eventName,
-                '3' => $this->attendeeName,
-                '4' => $this->ticketCode,
-                '5' => $this->ticketCode,
+            ] : [
+                'username'        => $this->attendeeName,
+                'event_name'      => $this->eventName,
+                'full_name'       => $this->attendeeName,
+                'email'           => $this->email,
+                'registration_id' => $this->ticketCode,
+                'ticket_url'      => url('/ticket/view/' . $this->ticketCode),
+                'status'          => $this->status,
+                'q_code'          => url('/qr/' . $this->ticketCode),
             ],
             'event_registration_confirmation', 'event_notification' => [
                 '1' => $this->attendeeName,
@@ -163,7 +146,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 '3' => $this->attendeeName,
                 '4' => $this->email,
                 '5' => $this->ticketCode,
-                '6' => url('/qr/' . $this->ticketCode),
+                '6' => url('/ticket/view/' . $this->ticketCode),
             ]
         };
 
@@ -286,11 +269,7 @@ new #[Layout('components.layouts.app')] class extends Component
                             <flux:field>
                                 <flux:label>Select Template</flux:label>
                                 <flux:select wire:model.live="selectedTemplate">
-                                    <flux:select.option value="nlcga_conf_ticket_text_v1">1. nlcga_conf_ticket_text_v1 (Pure Text + Digital QR Link)</flux:select.option>
-                                    <flux:select.option value="nlcga_conf_card_text_v2">2. nlcga_conf_card_text_v2 (Clean Card + Conference Footer)</flux:select.option>
-                                    <flux:select.option value="nlcga_conf_media_qr_v3">3. nlcga_conf_media_qr_v3 (Media Card with Live QR Image)</flux:select.option>
-                                    <flux:select.option value="nlcga_conf_button_ticket_v4">4. nlcga_conf_button_ticket_v4 (Card + 'View Ticket' Action Button)</flux:select.option>
-                                    <flux:select.option value="payment_completed">payment_completed (Classic)</flux:select.option>
+                                    <flux:select.option value="payment_completed">payment_completed (QR Ticket & Registration Details)</flux:select.option>
                                     <flux:select.option value="event_registration_confirmation">event_registration_confirmation (Details Confirmation)</flux:select.option>
                                     <flux:select.option value="event_payment_confirmation">event_payment_confirmation (Payment Receipt Summary)</flux:select.option>
                                     <flux:select.option value="event_reminder">event_reminder (Day-Before Event Reminder)</flux:select.option>
