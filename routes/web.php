@@ -35,6 +35,60 @@ Route::get('/fixcache', function () {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
 
+        // Update default templates in database to prevent obsolete SIDs
+        if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_templates')) {
+            \App\Models\WhatsAppTemplate::updateOrCreate(
+                ['name' => 'payment_completed'],
+                [
+                    'display_name' => 'Payment Completed',
+                    'content_sid'  => 'HXa52710a6d221783ddf647dac5400162b',
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => true,
+                ]
+            );
+            \App\Models\WhatsAppTemplate::updateOrCreate(
+                ['name' => 'payment_confirmed'],
+                [
+                    'display_name' => 'Payment Confirmed',
+                    'content_sid'  => 'HXa52710a6d221783ddf647dac5400162b',
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ]
+            );
+            \App\Models\WhatsAppTemplate::updateOrCreate(
+                ['name' => 'event_registration_confirmation'],
+                [
+                    'display_name' => 'Event Registration Confirmation',
+                    'content_sid'  => 'HX68e84d59fe2f55fc1580278239f61d04',
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ]
+            );
+            \App\Models\WhatsAppTemplate::updateOrCreate(
+                ['name' => 'event_payment_confirmation'],
+                [
+                    'display_name' => 'Event Payment Confirmation',
+                    'content_sid'  => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ]
+            );
+            \App\Models\WhatsAppTemplate::updateOrCreate(
+                ['name' => 'event_reminder'],
+                [
+                    'display_name' => 'Event Reminder',
+                    'content_sid'  => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ]
+            );
+        }
+
         \Illuminate\Support\Facades\Artisan::call('optimize:clear');
         \Illuminate\Support\Facades\Artisan::call('view:clear');
         \Illuminate\Support\Facades\Artisan::call('cache:clear');
@@ -50,7 +104,7 @@ Route::get('/fixcache', function () {
             }
         }
 
-        return response("<pre><h3>Migrations:</h3>{$migrateOutput}<h3>Cache Cleared:</h3>{$clearOutput}<h3>Status:</h3>All compiled Blade views, routes, and migrations updated successfully!</pre>");
+        return response("<pre><h3>Migrations:</h3>{$migrateOutput}<h3>Database Templates:</h3>Synced whatsapp_templates table with active Twilio Content SIDs (HXa52710a6d221783ddf647dac5400162b).<h3>Cache Cleared:</h3>{$clearOutput}<h3>Status:</h3>All compiled Blade views, routes, template database records, and migrations updated successfully!</pre>");
     } catch (\Throwable $e) {
         return response("<pre style='color: red;'>Error: " . $e->getMessage() . "</pre>", 500);
     }
