@@ -119,8 +119,10 @@ new #[Layout('components.layouts.app')] class extends Component
             'event_registration_confirmation', 'event_notification' => [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
-                '3' => $this->ticketCode,
-                '4' => $this->eventDate,
+                '3' => $this->attendeeName,
+                '4' => $this->ticketCode,
+                '5' => $this->eventDate,
+                '6' => url('/ticket/view/' . $this->ticketCode),
             ],
             'event_payment_confirmation', 'account_alert' => [
                 '1' => $this->attendeeName,
@@ -131,9 +133,10 @@ new #[Layout('components.layouts.app')] class extends Component
             'event_reminder' => [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
-                '3' => $this->eventDate,
-                '4' => $this->venue,
-                '5' => $this->ticketCode,
+                '3' => $this->ticketCode,
+                '4' => $this->eventDate,
+                '5' => $this->venue,
+                '6' => url('/ticket/view/' . $this->ticketCode),
             ],
             default => [
                 '1' => $this->attendeeName,

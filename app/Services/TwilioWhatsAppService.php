@@ -404,17 +404,27 @@ class TwilioWhatsAppService
         string $name,
         string $eventName,
         string $ticketCode,
-        string $eventDate = ''
+        string $eventDate = '',
+        string $ticketUrl = ''
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_registration_confirmation')
             ?? \App\Models\WhatsAppTemplate::getContentSid('event_notification')
             ?? config('services.twilio.templates.event_registration_confirmation');
 
+        $url = $ticketUrl ?: url('/ticket/view/' . $ticketCode);
+
         $variables = [
             '1' => $name,
             '2' => $eventName,
-            '3' => $ticketCode,
-            '4' => $eventDate,
+            '3' => $name,
+            '4' => $ticketCode,
+            '5' => $eventDate,
+            '6' => $url,
+            'attendee_name'   => $name,
+            'event_name'      => $eventName,
+            'ticket_code'     => $ticketCode,
+            'event_date'      => $eventDate,
+            'ticket_url'      => $url,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
@@ -439,6 +449,10 @@ class TwilioWhatsAppService
             '2' => $eventName,
             '3' => $amount,
             '4' => $reference,
+            'attendee_name' => $name,
+            'event_name'    => $eventName,
+            'amount'        => $amount,
+            'reference'     => $reference,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
@@ -453,22 +467,27 @@ class TwilioWhatsAppService
         string $eventName,
         string $eventDate,
         string $venue,
-        string $ticketCode
+        string $ticketCode,
+        string $ticketUrl = ''
     ): bool {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('event_reminder')
             ?? config('services.twilio.templates.event_reminder');
 
+        $url = $ticketUrl ?: url('/ticket/view/' . $ticketCode);
+
         $variables = [
             '1' => $name,
             '2' => $eventName,
-            '3' => $eventDate,
-            '4' => $venue,
-            '5' => $ticketCode,
+            '3' => $ticketCode,
+            '4' => $eventDate,
+            '5' => $venue,
+            '6' => $url,
             'attendee_name' => $name,
             'event_name'    => $eventName,
+            'ticket_code'   => $ticketCode,
             'event_date'    => $eventDate,
             'venue'         => $venue,
-            'ticket_code'   => $ticketCode,
+            'ticket_url'    => $url,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
