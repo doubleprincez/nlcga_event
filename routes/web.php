@@ -13,16 +13,7 @@ Route::post('/webhook/twilio', [\App\Http\Controllers\TwilioWebhookController::c
 // Public QR Code Media endpoint for Twilio Content API & WhatsApp templates
 Route::get('/qr/{code}', function ($code) {
     $cleanCode = strtoupper(preg_replace('/\.(png|jpg|jpeg)$/i', '', trim($code)));
-
-    $member = \App\Models\ConferenceMember::where('unique_code', $cleanCode)
-        ->orWhere('id', $cleanCode)
-        ->first();
-
-    if (!$member) {
-        return response('QR not found', 404)->header('Content-Type', 'text/plain');
-    }
-
-    $uniqueCode = $member->unique_code ?: $cleanCode;
+    $uniqueCode = $cleanCode ?: 'SAMPLE';
     $ticketUrl = url('/ticket/view/' . $uniqueCode);
 
     $imageBytes = \App\Services\QrCodeService::getOrGenerate($uniqueCode, $ticketUrl);
