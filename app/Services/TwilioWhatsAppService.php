@@ -449,8 +449,8 @@ class TwilioWhatsAppService
      */
     public function sendEventReminder(
         string $to,
-        string $eventName,
         string $name,
+        string $eventName,
         string $eventDate,
         string $venue,
         string $ticketCode
@@ -459,11 +459,16 @@ class TwilioWhatsAppService
             ?? config('services.twilio.templates.event_reminder');
 
         $variables = [
-            '1' => $eventName,
-            '2' => $name,
+            '1' => $name,
+            '2' => $eventName,
             '3' => $eventDate,
             '4' => $venue,
             '5' => $ticketCode,
+            'attendee_name' => $name,
+            'event_name'    => $eventName,
+            'event_date'    => $eventDate,
+            'venue'         => $venue,
+            'ticket_code'   => $ticketCode,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);

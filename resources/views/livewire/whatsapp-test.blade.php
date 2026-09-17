@@ -129,8 +129,8 @@ new #[Layout('components.layouts.app')] class extends Component
                 '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
             ],
             'event_reminder' => [
-                '1' => $this->eventName,
-                '2' => $this->attendeeName,
+                '1' => $this->attendeeName,
+                '2' => $this->eventName,
                 '3' => $this->eventDate,
                 '4' => $this->venue,
                 '5' => $this->ticketCode,
