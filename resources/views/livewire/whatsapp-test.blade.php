@@ -93,11 +93,11 @@ new #[Layout('components.layouts.app')] class extends Component
             // Default fallbacks matching Twilio Console Content SIDs
             if (!$contentSid) {
                 $contentSid = match ($this->selectedTemplate) {
-                    'payment_completed' => 'HXb8ece9cf3b01ded0ad0d937dd35254bb',
+                    'payment_completed' => 'HX58ce037365a2c5bbdcbdda9b76be6786',
                     'event_registration_confirmation', 'event_notification' => 'HX68e84d59fe2f55fc1580278239f61d04',
                     'event_payment_confirmation', 'account_alert' => 'HXb9b059eff7fa715d5f93418d2d9e0d5a',
                     'event_reminder' => 'HXb8a69c466d72d6bfac44dc932a4b7fe8',
-                    default => 'HXb8ece9cf3b01ded0ad0d937dd35254bb',
+                    default => 'HX58ce037365a2c5bbdcbdda9b76be6786',
                 };
             }
         }
@@ -112,6 +112,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 '5' => $this->ticketCode,
                 '6' => $this->status,
                 '7' => url('/qr/' . $this->ticketCode),
+                '8' => $this->ticketCode . '.png',
             ] : [
                 'username'        => $this->attendeeName,
                 'event_name'      => $this->eventName,
@@ -383,7 +384,7 @@ new #[Layout('components.layouts.app')] class extends Component
             <flux:card>
                 <flux:heading size="sm" class="mb-2">Server Cron Configuration</flux:heading>
                 <p class="text-xs text-zinc-500 mb-2">To bypass <code class="bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded text-[11px]">proc_open</code> restrictions on shared hosting / cPanel, run the artisan command directly or use the HTTP webhook:</p>
-                
+
                 <div class="space-y-2">
                     <div>
                         <span class="text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">Option 1: Direct CLI Command</span>

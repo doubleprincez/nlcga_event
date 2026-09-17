@@ -97,7 +97,7 @@ class TwilioWhatsAppService
 
     /**
      * Send a free-form WhatsApp message (within 24-hour window only)
-     * 
+     *
      * @param string $to Phone number
      * @param string $message The message text
      * @param string|null $mediaUrl Optional media URL
@@ -139,7 +139,7 @@ class TwilioWhatsAppService
         // Native HTTP Fallback (Zero external dependencies)
         try {
             $apiUrl = "https://api.twilio.com/2010-04-01/Accounts/{$this->accountSid}/Messages.json";
-            
+
             $payload = [
                 'From' => $fromFormatted,
                 'To'   => $toFormatted,
@@ -204,6 +204,10 @@ class TwilioWhatsAppService
                         $mapped[$strKey] = $variables['registration_id'];
                     } elseif ($strKey === '6' && isset($variables['status'])) {
                         $mapped[$strKey] = $variables['status'];
+                    } elseif ($strKey === '7') {
+                        $mapped[$strKey] = $variables['7'] ?? $variables['q_code_url'] ?? $variables['q_code'] ?? url('/qr/' . ($variables['registration_id'] ?? $variables['ticket_code'] ?? 'EVT'));
+                    } elseif ($strKey === '8') {
+                        $mapped[$strKey] = $variables['8'] ?? ($variables['registration_id'] ?? $variables['ticket_code'] ?? 'EVT') . '.png';
                     } elseif ($strKey === 'q_code' && isset($variables['registration_id'])) {
                         $mapped[$strKey] = $variables['registration_id'] . '.png';
                     } else {
@@ -221,7 +225,7 @@ class TwilioWhatsAppService
 
     /**
      * Send a template-based WhatsApp message (can be sent anytime)
-     * 
+     *
      * @param string $to Phone number
      * @param string $contentSid Template Content SID from Twilio Console
      * @param array $variables Template variables (e.g., ['1' => 'John', '2' => 'EVT-123'])
@@ -295,7 +299,7 @@ class TwilioWhatsAppService
             $errorBody = $response->json();
             $code = $errorBody['code'] ?? 'N/A';
             $msg = $errorBody['message'] ?? $response->body();
-            
+
             // Check if failure is due to unapproved / rejected WhatsApp template state
             $approvalInfo = $this->fetchApprovalStatus($contentSid);
             $whatsappStatus = $approvalInfo['whatsapp']['status'] ?? 'unknown';
@@ -330,7 +334,7 @@ class TwilioWhatsAppService
             ->where('direction', 'inbound')
             ->where('created_at', '>=', now()->subHours(24))
             ->first();
-        
+
         if ($lastContact) {
             Log::info("Using free-form message (within 24-hour window)");
             return $this->sendMessage($to, $message, $mediaUrl);
@@ -339,40 +343,49 @@ class TwilioWhatsAppService
                 Log::error("No template SID provided and outside 24-hour window. Cannot send.");
                 return false;
             }
-            
+
             Log::info("Using template message (outside 24-hour window or first contact)");
             return $this->sendTemplateMessage($to, $contentSid, $variables);
         }
     }
 
     /**
-     * Template 1: payment_completed
-     * Hello {username}, Your registration for {event_name} is successful and your registration information is as follows:
-     * Full name: {full_name}
-     * Email: {email}
-     * Registration ID: {registration_id}
-     * Payment Status: {status}
-     * QR: {q_code}
+     * Template 1: payment_completed (8-variable format with media QR card)
+     * Hello {{1}}, Your registration for {{2}} is successful and your registration information is as follows:
+     * Full name: {{3}}
+     * Email: {{4}}
+     * Registration ID: {{5}}
+     * Payment Status: {{6}}
+     * QR: {{7}}
+     * 
+     * Thank you for registering. See you at the conference
+     * Media: https://api-v2.nlcga.com/qr/{{8}}
      */
     public function sendPaymentCompleted(string $to, array $data): bool
     {
         $contentSid = \App\Models\WhatsAppTemplate::getContentSid('payment_completed')
-            ?? config('services.twilio.templates.payment_completed', 'HXb8ece9cf3b01ded0ad0d937dd35254bb');
+            ?? config('services.twilio.templates.payment_completed', 'HX58ce037365a2c5bbdcbdda9b76be6786');
+
+        $regId = $data['registration_id'] ?? $data['ticket_code'] ?? '';
+        $qrUrl = $data['q_code_url'] ?? $data['q_code'] ?? url('/qr/' . $regId);
+        $qrFilename = $data['qr_filename'] ?? ($regId ? $regId . '.png' : 'ticket.png');
 
         $variables = [
             '1'               => $data['username'] ?? $data['full_name'] ?? 'Attendee',
             '2'               => $data['event_name'] ?? 'NLCGA Conference 2026',
             '3'               => $data['full_name'] ?? $data['username'] ?? 'Attendee',
             '4'               => $data['email'] ?? 'N/A',
-            '5'               => $data['registration_id'] ?? $data['ticket_code'] ?? '',
+            '5'               => $regId,
             '6'               => $data['status'] ?? 'Confirmed',
+            '7'               => $qrUrl,
+            '8'               => $qrFilename,
             'username'        => $data['username'] ?? $data['full_name'] ?? 'Attendee',
             'event_name'      => $data['event_name'] ?? 'NLCGA Conference 2026',
             'full_name'       => $data['full_name'] ?? $data['username'] ?? 'Attendee',
             'email'           => $data['email'] ?? 'N/A',
-            'registration_id' => $data['registration_id'] ?? $data['ticket_code'] ?? '',
+            'registration_id' => $regId,
             'status'          => $data['status'] ?? 'Confirmed',
-            'q_code'          => $data['q_code'] ?? url('/qr/' . ($data['registration_id'] ?? '')),
+            'q_code'          => $qrUrl,
         ];
 
         return $this->sendTemplateMessage($to, $contentSid, $variables);
@@ -474,7 +487,7 @@ class TwilioWhatsAppService
     public function sendTemplateByName(string $to, string $templateName, array $variables = [])
     {
         $template = \App\Models\WhatsAppTemplate::getByName($templateName);
-        
+
         if (!$template) {
             Log::error("Template not found: {$templateName}");
             return false;

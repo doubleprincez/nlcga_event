@@ -62,7 +62,7 @@ class SendPendingWhatsAppTickets extends Command
         // Retrieve dynamic template SID from database or use fallback
         $contentSid = WhatsAppTemplate::getContentSid('payment_completed')
             ?? WhatsAppTemplate::getContentSid('event_notification')
-            ?? env('TWILIO_DEFAULT_TEMPLATE_SID', 'HXb8ece9cf3b01ded0ad0d937dd35254bb');
+            ?? env('TWILIO_DEFAULT_TEMPLATE_SID', 'HX58ce037365a2c5bbdcbdda9b76be6786');
 
         $successCount = 0;
         $failedCount = 0;
@@ -81,7 +81,7 @@ class SendPendingWhatsAppTickets extends Command
                 $member->qr_path = 'qrcodes/' . $member->unique_code . '.png';
                 $member->save();
 
-                // 3. Map dynamic template variables (Supports both numbered and named schemas)
+                // 3. Map dynamic template variables (Supports 8 variables with media QR)
                 $variables = [
                     '1'               => $member->fullName,
                     '2'               => 'NLCGA Conference 2026',
@@ -89,6 +89,8 @@ class SendPendingWhatsAppTickets extends Command
                     '4'               => $member->email ?? 'N/A',
                     '5'               => $member->unique_code,
                     '6'               => 'Confirmed',
+                    '7'               => url('/qr/' . $member->unique_code),
+                    '8'               => $member->unique_code . '.png',
                     'username'        => $member->fullName,
                     'event_name'      => 'NLCGA Conference 2026',
                     'full_name'       => $member->fullName,
