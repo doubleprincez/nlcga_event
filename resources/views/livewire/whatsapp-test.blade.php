@@ -116,7 +116,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 'status'          => $this->status,
                 'q_code'          => url('/qr/' . $this->ticketCode),
             ],
-            'event_registration_confirmation', 'event_notification' => [
+            'event_registration_confirmation', 'event_registration_marketing', 'event_notification' => [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
                 '3' => $this->attendeeName,
@@ -130,7 +130,7 @@ new #[Layout('components.layouts.app')] class extends Component
                 '3' => '₦' . $this->amount,
                 '4' => 'REF-' . strtoupper(substr(md5(time()), 0, 8)),
             ],
-            'event_reminder' => [
+            'event_reminder', 'event_reminder_session' => [
                 '1' => $this->attendeeName,
                 '2' => $this->eventName,
                 '3' => $this->ticketCode,
@@ -182,7 +182,7 @@ new #[Layout('components.layouts.app')] class extends Component
 
         $twilio = new TwilioWhatsAppService();
         $details = $twilio->fetchContentDetails($contentSid);
-        $approvals = $twilio->fetchApprovalStatus($contentSid);
+        $approval = $twilio->fetchApprovalStatus($contentSid);
 
         if (!$details) {
             $this->isSuccess = false;
@@ -194,62 +194,77 @@ new #[Layout('components.layouts.app')] class extends Component
         $this->isSuccess = true;
         $this->resultMessage = "Fetched template structure directly from Twilio Content API:";
         $this->inspectedTemplate = json_encode([
-            'content_details' => $details,
-            'approval_status' => $approvals,
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            'content_sid'     => $contentSid,
+            'template_name'   => $this->selectedTemplate,
+            'twilio_content'  => $details,
+            'meta_approval'   => $approval,
+        ], JSON_PRETTY_PRINT);
     }
 
-    public function processPendingTickets(): void
+    public function runBatchDispatch(): void
     {
         try {
-            Artisan::call('whatsapp:send-pending-tickets', ['--limit' => 50]);
+            Artisan::call('whatsapp:send-pending-tickets', ['--limit' => 20]);
             $output = Artisan::output();
             $this->refreshPendingCount();
-
             $this->isSuccess = true;
-            $this->resultMessage = "Pending ticket scanner executed!\n" . $output;
+            $this->resultMessage = "Batch Ticket Dispatch Executed:\n" . trim($output);
         } catch (\Throwable $e) {
             $this->isSuccess = false;
-            $this->resultMessage = "Error executing scanner: " . $e->getMessage();
+            $this->resultMessage = "Batch dispatch error: " . $e->getMessage();
         }
     }
 }; ?>
 
-<div>
-    <div class="flex items-center justify-between mb-6">
+<div class="p-6 space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-4">
         <div>
-            <flux:heading size="xl">WhatsApp Test & Dispatch Center</flux:heading>
+            <flux:heading size="xl" level="1">WhatsApp Test & Dispatch Center</flux:heading>
             <flux:subheading>Test WhatsApp template delivery, simulate bot conversations, and trigger batch ticket dispatches.</flux:subheading>
         </div>
-        <flux:button variant="ghost" href="{{ route('whatsapp-templates.index') }}" wire:navigate icon="chat-bubble-oval-left">
-            Manage Templates
-        </flux:button>
+        <div class="flex items-center gap-2">
+            <flux:button href="{{ route('whatsapp-templates.index') }}" variant="subtle" size="sm" icon="document-text">
+                Manage Templates
+            </flux:button>
+        </div>
     </div>
 
-    @if ($resultMessage)
-        <div class="mb-6 p-4 rounded-xl border {{ $isSuccess ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-300 text-red-800 dark:bg-red-950/40 dark:border-red-800 dark:text-red-300' }}">
-            <div class="flex items-center gap-2 font-bold mb-1">
-                <span>{{ $isSuccess ? '✅ Success' : '❌ Error' }}</span>
+    <!-- Live Status / Result Banner -->
+    @if($resultMessage)
+        <div class="p-4 rounded-xl border {{ $isSuccess ? 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800 text-green-900 dark:text-green-200' : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-900 dark:text-red-200' }}">
+            <div class="flex items-start gap-3">
+                <flux:icon name="{{ $isSuccess ? 'check-circle' : 'x-circle' }}" class="w-5 h-5 mt-0.5 shrink-0" />
+                <div class="flex-1 text-sm font-medium whitespace-pre-line">
+                    <p class="font-bold text-base mb-1">{{ $isSuccess ? 'Success' : 'Error' }}</p>
+                    {{ $resultMessage }}
+                </div>
             </div>
-            <p class="text-sm whitespace-pre-line">{{ $resultMessage }}</p>
             @if($rawResponse)
-                <pre class="mt-2 p-2 bg-black/10 rounded text-xs overflow-x-auto font-mono">{{ $rawResponse }}</pre>
+                <div class="mt-3 pt-3 border-t border-current/20">
+                    <flux:subheading size="xs" class="font-mono uppercase opacity-75 mb-1">Payload Sent</flux:subheading>
+                    <pre class="text-xs bg-black/10 dark:bg-black/30 p-2 rounded overflow-x-auto font-mono">{{ $rawResponse }}</pre>
+                </div>
             @endif
         </div>
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Test Sender Card (2 cols) -->
+        <!-- Main Form Column -->
         <div class="lg:col-span-2 space-y-6">
-            <flux:card>
-                <flux:heading size="lg" class="mb-1">Send Test WhatsApp Message</flux:heading>
-                <flux:subheading class="mb-4">Test template delivery to your personal WhatsApp number before broadcasting.</flux:subheading>
+            <!-- Test Sender Card -->
+            <flux:card class="space-y-5">
+                <div>
+                    <flux:heading size="lg">Send Test WhatsApp Message</flux:heading>
+                    <flux:subheading>Test template delivery to your personal WhatsApp number before broadcasting.</flux:subheading>
+                </div>
 
                 <form wire:submit="sendTest" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <flux:field>
                             <flux:label>Recipient WhatsApp Number *</flux:label>
-                            <flux:input wire:model="phone" placeholder="e.g. +2348012345678 or 08012345678" required />
+                            <flux:input wire:model="phone" placeholder="+2348012345678 or 08012345678" required />
+                            <flux:description>International (+234...) or local (080...) format</flux:description>
                             <flux:error name="phone" />
                         </flux:field>
 
@@ -267,10 +282,12 @@ new #[Layout('components.layouts.app')] class extends Component
                             <flux:field>
                                 <flux:label>Select Template</flux:label>
                                 <flux:select wire:model.live="selectedTemplate">
-                                    <flux:select.option value="payment_completed">payment_completed (QR Ticket & Registration Details)</flux:select.option>
-                                    <flux:select.option value="event_registration_confirmation">event_registration_confirmation (Details Confirmation)</flux:select.option>
-                                    <flux:select.option value="event_payment_confirmation">event_payment_confirmation (Payment Receipt Summary)</flux:select.option>
-                                    <flux:select.option value="event_reminder">event_reminder (Day-Before Event Reminder)</flux:select.option>
+                                    <flux:select.option value="payment_completed">1. nlcga_ticket_confirmation_v1 (Payment / QR Ticket)</flux:select.option>
+                                    <flux:select.option value="event_registration_confirmation">2. nlcga_reg_confirmation_v2 (Registration Confirmation)</flux:select.option>
+                                    <flux:select.option value="event_payment_confirmation">3. nlcga_payment_receipt_v1 (Payment Receipt Summary)</flux:select.option>
+                                    <flux:select.option value="event_reminder">4. nlcga_event_reminder_alert_v2 (Event Reminder Alert)</flux:select.option>
+                                    <flux:select.option value="event_reminder_session">5. nlcga_conference_reminder_v3 (Conference Session Reminder)</flux:select.option>
+                                    <flux:select.option value="event_registration_marketing">6. nlcga_reg_notice_marketing_v4 (Registration Notice - Mkt)</flux:select.option>
                                     <flux:select.option value="custom">Custom Content SID...</flux:select.option>
                                 </flux:select>
                             </flux:field>
@@ -278,8 +295,8 @@ new #[Layout('components.layouts.app')] class extends Component
                             <flux:field>
                                 <flux:label>Template Variable Format in Twilio</flux:label>
                                 <flux:select wire:model.live="variableFormat">
+                                    <flux:select.option value="numbered">Numbered: {{1}}, {{2}}, {{3}}... (Twilio Standard)</flux:select.option>
                                     <flux:select.option value="named">Named: {username}, {event_name}, {email}...</flux:select.option>
-                                    <flux:select.option value="numbered">Numbered: {{1}}, {{2}}, {{3}}...</flux:select.option>
                                 </flux:select>
                             </flux:field>
                         </div>

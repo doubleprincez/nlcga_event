@@ -40,7 +40,7 @@ Route::get('/fixcache', function () {
         if (\Illuminate\Support\Facades\Schema::hasTable('whatsapp_templates')) {
             $defaultTemplates = [
                 'payment_completed' => [
-                    'display_name' => 'Payment Completed',
+                    'display_name' => 'Ticket Confirmation (nlcga_ticket_confirmation_v1)',
                     'content_sid'  => env('TWILIO_TEMPLATE_PAYMENT_COMPLETED', 'HXe92223557322b464db69a2e375e1bfa8'),
                     'category'     => 'UTILITY',
                     'status'       => 'active',
@@ -54,22 +54,36 @@ Route::get('/fixcache', function () {
                     'is_default'   => false,
                 ],
                 'event_registration_confirmation' => [
-                    'display_name' => 'Event Registration Confirmation',
+                    'display_name' => 'Registration Confirmation (nlcga_reg_confirmation_v2)',
                     'content_sid'  => env('TWILIO_TEMPLATE_EVENT_REGISTRATION', 'HX75643f7b0d5707b5987c3dcc52ace082'),
                     'category'     => 'UTILITY',
                     'status'       => 'active',
                     'is_default'   => false,
                 ],
+                'event_registration_marketing' => [
+                    'display_name' => 'Registration Notice (nlcga_reg_notice_marketing_v4)',
+                    'content_sid'  => env('TWILIO_TEMPLATE_EVENT_REGISTRATION_MKT', 'HX3fc582dbadfe57303e9d79db2a825f85'),
+                    'category'     => 'MARKETING',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ],
                 'event_payment_confirmation' => [
-                    'display_name' => 'Event Payment Confirmation',
+                    'display_name' => 'Payment Receipt (nlcga_payment_receipt_v1)',
                     'content_sid'  => env('TWILIO_TEMPLATE_EVENT_PAYMENT', 'HX7be499849e0733f53932a8620aad56f5'),
                     'category'     => 'UTILITY',
                     'status'       => 'active',
                     'is_default'   => false,
                 ],
                 'event_reminder' => [
-                    'display_name' => 'Event Reminder',
+                    'display_name' => 'Event Reminder Alert (nlcga_event_reminder_alert_v2)',
                     'content_sid'  => env('TWILIO_TEMPLATE_EVENT_REMINDER', 'HXf1a171f29dd654f85240c6c5eec5f3a8'),
+                    'category'     => 'UTILITY',
+                    'status'       => 'active',
+                    'is_default'   => false,
+                ],
+                'event_reminder_session' => [
+                    'display_name' => 'Conference Session Reminder (nlcga_conference_reminder_v3)',
+                    'content_sid'  => env('TWILIO_TEMPLATE_EVENT_REMINDER_SESSION', 'HX0cd6aa7ec59dc093b3d9dbc1aef26e07'),
                     'category'     => 'UTILITY',
                     'status'       => 'active',
                     'is_default'   => false,
@@ -82,7 +96,7 @@ Route::get('/fixcache', function () {
 
             foreach ($defaultTemplates as $name => $attrs) {
                 \App\Models\WhatsAppTemplate::updateOrCreate(['name' => $name], $attrs);
-                $syncedTemplates[] = "{$name} &rarr; <strong>{$attrs['content_sid']}</strong>";
+                $syncedTemplates[] = "{$name} &rarr; <strong>{$attrs['content_sid']}</strong> ({$attrs['display_name']})";
             }
         }
 

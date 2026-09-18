@@ -46,8 +46,10 @@ return [
             'payment_completed'              => env('TWILIO_TEMPLATE_PAYMENT_COMPLETED'),
             'payment_confirmed'              => env('TWILIO_TEMPLATE_PAYMENT_CONFIRMED', env('TWILIO_TEMPLATE_PAYMENT_COMPLETED')),
             'event_registration_confirmation' => env('TWILIO_TEMPLATE_EVENT_REGISTRATION'),
+            'event_registration_marketing'    => env('TWILIO_TEMPLATE_EVENT_REGISTRATION_MKT'),
             'event_payment_confirmation'      => env('TWILIO_TEMPLATE_EVENT_PAYMENT'),
             'event_reminder'                  => env('TWILIO_TEMPLATE_EVENT_REMINDER'),
+            'event_reminder_session'          => env('TWILIO_TEMPLATE_EVENT_REMINDER_SESSION'),
         ],
     ],
 
