@@ -101,7 +101,7 @@ class WhatsAppBotService
                             ]
                         ],
                         'generationConfig' => [
-                            'maxOutputTokens' => 250
+                            'maxOutputTokens' => 800
                         ]
                     ]);
 
@@ -122,14 +122,14 @@ class WhatsAppBotService
         if ($openAiKey) {
             try {
                 $response = Http::withToken($openAiKey)
-                    ->timeout(8)
+                    ->timeout(12)
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model' => 'gpt-4o-mini',
                         'messages' => [
                             ['role' => 'system', 'content' => $systemPrompt],
                             ['role' => 'user', 'content' => $userPrompt],
                         ],
-                        'max_tokens' => 150,
+                        'max_tokens' => 800,
                     ]);
 
                 if ($response->successful()) {
