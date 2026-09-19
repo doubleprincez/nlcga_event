@@ -33,6 +33,7 @@ class SendPendingWhatsAppTickets extends Command
     {
         $limit = (int) $this->option('limit');
         $this->info("Scanning database for pending WhatsApp ticket dispatches (Limit: {$limit})...");
+        Log::info("[WhatsApp Ticket Scanner] Scanning database for pending tickets (Limit: {$limit})...");
 
         // Find members who paid but haven't received their WhatsApp ticket
         $members = ConferenceMember::where(function ($q) {
@@ -52,10 +53,12 @@ class SendPendingWhatsAppTickets extends Command
 
         if ($members->isEmpty()) {
             $this->info("No pending WhatsApp tickets found.");
+            Log::info("[WhatsApp Ticket Scanner] Scan complete: No pending tickets found.");
             return Command::SUCCESS;
         }
 
         $this->info("Found {$members->count()} pending ticket(s) to process.");
+        Log::info("[WhatsApp Ticket Scanner] Found {$members->count()} pending ticket(s) to process.");
 
         $twilio = new TwilioWhatsAppService();
 
@@ -109,19 +112,23 @@ class SendPendingWhatsAppTickets extends Command
                 if ($sent) {
                     $member->update(['whatsapp_sent' => true]);
                     $this->info("✅ Dispatched ticket to {$member->fullName} ({$member->phoneNumber}) [{$member->unique_code}]");
+                    Log::info("[WhatsApp Ticket Scanner] ✅ Dispatched ticket to {$member->fullName} ({$member->phoneNumber}) [{$member->unique_code}]");
                     $successCount++;
                 } else {
-                    $this->warn("⚠️ Failed sending WhatsApp to {$member->phoneNumber} ({$member->fullName})");
+                    $err = $twilio->getLastError() ?: 'Unknown error';
+                    $this->warn("⚠️ Failed sending WhatsApp to {$member->phoneNumber} ({$member->fullName}): {$err}");
+                    Log::warning("[WhatsApp Ticket Scanner] ⚠️ Failed sending to {$member->phoneNumber} ({$member->fullName}): {$err}");
                     $failedCount++;
                 }
             } catch (\Throwable $e) {
-                Log::error("Error processing ticket dispatch for member ID {$member->id}: " . $e->getMessage());
+                Log::error("[WhatsApp Ticket Scanner] ❌ Error processing member ID {$member->id}: " . $e->getMessage());
                 $this->error("❌ Exception for member ID {$member->id}: " . $e->getMessage());
                 $failedCount++;
             }
         }
 
         $this->info("Scan completed. Success: {$successCount}, Failed/Skipped: {$failedCount}");
+        Log::info("[WhatsApp Ticket Scanner] Finished execution. Success: {$successCount}, Failed: {$failedCount}");
         return Command::SUCCESS;
     }
 }
